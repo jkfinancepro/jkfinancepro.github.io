@@ -43,7 +43,39 @@
     color:var(--paper);
     display:flex; flex-direction:column;
     border-right:1px solid var(--line);
+    transition:width .2s ease;
   }
+  aside.sidebar.pinned-collapsed{width:68px;}
+
+  .pin-toggle-btn{
+    position:absolute; top:16px; right:12px;
+    background:rgba(255,255,255,0.08); border:none; color:rgba(245,247,246,0.6);
+    width:24px; height:24px; border-radius:6px; cursor:pointer; font-size:10px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pin-toggle-btn:hover{background:rgba(255,255,255,0.16); color:#fff;}
+
+  /* ---------- 收合狀態：只留圖示，畫面空間讓給主內容 ---------- */
+  .collapsed-icon{display:none;}
+  aside.sidebar.pinned-collapsed .brand{display:flex; flex-direction:column; align-items:center; padding:16px 6px;}
+  aside.sidebar.pinned-collapsed .brand-home-link,
+  aside.sidebar.pinned-collapsed .eyebrow,
+  aside.sidebar.pinned-collapsed h1,
+  aside.sidebar.pinned-collapsed .who{display:none;}
+  aside.sidebar.pinned-collapsed .pin-toggle-btn{position:static;}
+
+  aside.sidebar.pinned-collapsed .nav-group-header{justify-content:center; padding:10px 4px;}
+  aside.sidebar.pinned-collapsed .nav-group-header span:first-child,
+  aside.sidebar.pinned-collapsed .chevron{display:none;}
+
+  aside.sidebar.pinned-collapsed .mod-btn{padding:11px 0; text-align:center;}
+  aside.sidebar.pinned-collapsed .mod-btn .name,
+  aside.sidebar.pinned-collapsed .mod-btn .desc{display:none;}
+  aside.sidebar.pinned-collapsed .mod-btn .collapsed-icon{display:block; font-size:19px; line-height:1;}
+
+  aside.sidebar.pinned-collapsed .user-info{display:none;}
+  aside.sidebar.pinned-collapsed .user-box{justify-content:center; padding:14px 6px;}
+  aside.sidebar.pinned-collapsed .user-menu{left:50%; transform:translateX(-50%);}
   .brand{
     padding:18px 20px 14px;
     border-bottom:1px solid var(--line);
@@ -111,7 +143,34 @@
   .user-box{
     display:flex; align-items:center; gap:10px;
     padding:14px 22px; border-top:1px solid var(--line);
+    position:relative;
   }
+
+  /* ---------- 頭像選單（登出／帳號設定／字體大小） ---------- */
+  .user-menu{
+    display:none; position:absolute; bottom:calc(100% + 8px); left:14px; width:220px;
+    background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(20,50,60,0.2);
+    border:1px solid var(--line); padding:8px; z-index:250;
+  }
+  .user-menu.show{display:block;}
+  .user-menu-item{
+    width:100%; display:flex; align-items:center; gap:9px; text-align:left;
+    padding:10px 12px; border:none; background:none; border-radius:8px;
+    font-size:13px; font-weight:600; color:var(--ink); cursor:pointer;
+    font-family:"Noto Sans TC", sans-serif;
+  }
+  .user-menu-item:hover{background:var(--paper);}
+  .user-menu-item.danger{color:#B3492F;}
+  .user-menu-item .icon{font-size:13px; width:16px; text-align:center;}
+  .user-menu-fontsize{padding:8px 12px 10px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin:4px 0;}
+  .user-menu-label{font-size:11px; font-weight:700; color:var(--ink-soft); margin-bottom:8px;}
+  .font-size-pills{display:flex; gap:6px;}
+  .font-size-pill{
+    flex:1; padding:7px 0; border:1.5px solid var(--line); border-radius:8px; background:var(--paper);
+    font-size:12px; font-weight:700; color:var(--ink-soft); cursor:pointer;
+    font-family:"Noto Sans TC", sans-serif;
+  }
+  .font-size-pill.active{background:var(--navy); border-color:var(--navy); color:#fff;}
 
   /* ---------- 帳號設定彈窗 ---------- */
   .settings-overlay{
@@ -202,6 +261,8 @@
   @media (max-width:820px){
     body{display:flex; flex-direction:column;}
     .shell{height:auto; flex:1; min-height:0;}
+    .pin-toggle-btn{display:none;}
+    aside.sidebar.pinned-collapsed{width:100%;} /* 手機版不套用收合窄化，維持原本抽屜邏輯 */
 
     /* ---------- 手機頂部窄列：漢堡按鈕 + 目前模組名稱 ---------- */
     .mobile-topbar{
@@ -258,6 +319,7 @@
   <aside class="sidebar">
     <div class="brand">
       <a href="index.html" class="brand-home-link" title="離開工作台，回到官網">← 離開工作台</a>
+      <button class="pin-toggle-btn" id="pinToggleBtn" title="收合側邊欄">⟨⟨</button>
       <div class="eyebrow">Financial Advisor Workspace</div>
       <h1 id="brandHomeBtn" style="cursor:pointer;" title="回到工作台首頁">資產配置工作台</h1>
       <div class="who">覺醒 × 金錢 × 故事</div>
@@ -271,10 +333,12 @@
         </button>
         <div class="nav-group-body">
           <button class="mod-btn" data-target="frame-blueprint">
+            <span class="collapsed-icon">🗺️</span>
             <span class="name"><span class="num">◆</span>財富地圖</span>
             <span class="desc">顧問式引導問卷／財富畫像報告</span>
           </button>
           <button class="mod-btn" data-target="frame-clientrecords">
+            <span class="collapsed-icon">🗂️</span>
             <span class="name"><span class="num">◆</span>客戶資料</span>
             <span class="desc">已填答的財富地圖紀錄</span>
           </button>
@@ -288,10 +352,12 @@
         </button>
         <div class="nav-group-body">
           <button class="mod-btn" data-target="frame-marketnews">
+            <span class="collapsed-icon">📰</span>
             <span class="name"><span class="num">◆</span>市場快訊</span>
             <span class="desc">即時財經新聞／自動分類／標明出處</span>
           </button>
           <button class="mod-btn" data-target="frame-marketoverview">
+            <span class="collapsed-icon">📊</span>
             <span class="name"><span class="num">◆</span>市場概況</span>
             <span class="desc">即時匯率／全球指數／大盤走勢</span>
           </button>
@@ -305,22 +371,27 @@
         </button>
         <div class="nav-group-body">
           <button class="mod-btn" data-target="frame-simulation">
+            <span class="collapsed-icon">🎯</span>
             <span class="name"><span class="num">01</span>沙盤推演必勝</span>
             <span class="desc">退休／購屋／教育／遺贈／投資試算機</span>
           </button>
           <button class="mod-btn" data-target="frame-cashflow">
+            <span class="collapsed-icon">💧</span>
             <span class="name"><span class="num">02</span>收支現金流</span>
             <span class="desc">收入／支出／年度結餘／儲蓄率</span>
           </button>
           <button class="mod-btn" data-target="frame-balance">
+            <span class="collapsed-icon">⚖️</span>
             <span class="name"><span class="num">03</span>資產負債表</span>
             <span class="desc">資產／負債／淨值／負債比</span>
           </button>
           <button class="mod-btn" data-target="frame-loan">
+            <span class="collapsed-icon">🏦</span>
             <span class="name"><span class="num">04</span>貸款試算室</span>
             <span class="desc">車貸信貸／房貸／寬限期／利差</span>
           </button>
           <button class="mod-btn" data-target="frame-efficiency">
+            <span class="collapsed-icon">📈</span>
             <span class="name"><span class="num">05</span>資金效率健檢</span>
             <span class="desc">通膨與資金效率快篩</span>
           </button>
@@ -334,6 +405,7 @@
         </button>
         <div class="nav-group-body">
           <button class="mod-btn" data-target="frame-feedback">
+            <span class="collapsed-icon">📮</span>
             <span class="name"><span class="num">◆</span>意見箱</span>
             <span class="desc">功能異常回報／改進建議</span>
           </button>
@@ -341,11 +413,27 @@
       </div>
     </nav>
 
-    <div class="user-box">
-      <div class="user-avatar" id="userAvatar" title="帳號設定" style="cursor:pointer;">J</div>
+    <div class="user-box" id="userBox">
+      <div class="user-avatar" id="userAvatar" title="選單" style="cursor:pointer;">J</div>
       <div class="user-info">
         <div class="user-name" id="userName">Jess</div>
-        <button class="logout-btn" id="logoutBtn">登出</button>
+      </div>
+
+      <div class="user-menu" id="userMenu">
+        <button class="user-menu-item" id="menuAccountSettings">
+          <span class="icon">⚙️</span> 帳號設定
+        </button>
+        <div class="user-menu-fontsize">
+          <div class="user-menu-label">字體大小</div>
+          <div class="font-size-pills" id="fontSizePills">
+            <button class="font-size-pill" data-size="small">小</button>
+            <button class="font-size-pill" data-size="medium">中</button>
+            <button class="font-size-pill" data-size="large">大</button>
+          </div>
+        </div>
+        <button class="user-menu-item danger" id="menuLogout">
+          <span class="icon">↩</span> 登出
+        </button>
       </div>
     </div>
   </aside>
@@ -409,7 +497,7 @@
     window.currentAdvisorId = user.id; // 讓內嵌的模組（例如客戶資料）之後可以用這個 id 存取自己的資料
   })();
 
-  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  document.getElementById('menuLogout').addEventListener('click', async ()=>{
     await supabaseClient.auth.signOut();
     window.location.href = 'login.html';
   });
@@ -428,7 +516,20 @@
     settingsSuccess.textContent = text;
     settingsSuccess.classList.add('show');
   }
-  document.getElementById('userAvatar').addEventListener('click', ()=>{
+  // ---- 頭像選單：登出／帳號設定／字體大小 ----
+  const userMenu = document.getElementById('userMenu');
+  document.getElementById('userAvatar').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    userMenu.classList.toggle('show');
+  });
+  document.addEventListener('click', (e)=>{
+    if(userMenu.classList.contains('show') && !userMenu.contains(e.target) && e.target.id!=='userAvatar'){
+      userMenu.classList.remove('show');
+    }
+  });
+
+  document.getElementById('menuAccountSettings').addEventListener('click', ()=>{
+    userMenu.classList.remove('show');
     settingsError.classList.remove('show');
     settingsSuccess.classList.remove('show');
     document.getElementById('newPasswordInput').value = '';
@@ -475,6 +576,23 @@
   const frames = document.querySelectorAll('main iframe');
   const loading = document.getElementById('loading');
 
+  // ---- 字體大小：用 zoom 縮放每個模組 iframe 的內容，小=目前風格(基準) ----
+  const FONT_SCALE_KEY = 'jk_font_scale';
+  const FONT_SCALE_MAP = {small:1, medium:1.15, large:1.3};
+  function applyFontScale(size){
+    const scale = FONT_SCALE_MAP[size] || 1;
+    frames.forEach(f=>{ f.style.zoom = scale; });
+    document.querySelectorAll('.font-size-pill').forEach(p=>{
+      p.classList.toggle('active', p.dataset.size===size);
+    });
+    localStorage.setItem(FONT_SCALE_KEY, size);
+  }
+  document.querySelectorAll('.font-size-pill').forEach(pill=>{
+    pill.addEventListener('click', ()=> applyFontScale(pill.dataset.size));
+  });
+  applyFontScale(localStorage.getItem(FONT_SCALE_KEY) || 'small');
+
+
   // 只要「目前要顯示的那一頁」載入完成就先讓畫面出現，不用等其他背景模組全部載完，
   // 避免手機網路較慢時，某一個模組卡住就讓整個畫面一直停在「載入模組中」出不來。
   const initialFrame = document.getElementById('frame-home');
@@ -483,7 +601,8 @@
   // 保險：就算真的卡住，最多 8 秒後還是強制讓畫面出現，不讓使用者被永遠卡住
   setTimeout(hideLoading, 8000);
 
-  function activateFrame(targetId){
+  function activateFrame(targetId, opts){
+    opts = opts || {};
     buttons.forEach(b=> b.classList.toggle('active', b.dataset.target === targetId));
     frames.forEach(f=> f.classList.toggle('active', f.id === targetId));
     const activeBtn = Array.from(buttons).find(b=> b.dataset.target === targetId);
@@ -492,7 +611,20 @@
       nameEl.textContent = activeBtn ? activeBtn.querySelector('.name').textContent : '首頁';
     }
     closeMobileDrawer();
+    // 記錄瀏覽器歷史，這樣使用者按「上一頁」會退回工作台內部的上一步，
+    // 而不是直接跳出工作台、回到登入畫面
+    if(!opts.skipHistory){
+      history.pushState({frame: targetId}, '', '#' + targetId.replace('frame-',''));
+    }
   }
+
+  // 使用者按瀏覽器「上一頁／下一頁」時，切換回對應的模組
+  window.addEventListener('popstate', (e)=>{
+    const targetId = (e.state && e.state.frame) || 'frame-home';
+    activateFrame(targetId, {skipHistory:true});
+  });
+  // 進工作台的第一筆歷史紀錄，設為首頁
+  history.replaceState({frame:'frame-home'}, '', '#home');
 
   buttons.forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -526,6 +658,21 @@
     else openMobileDrawer();
   });
   drawerOverlayEl.addEventListener('click', closeMobileDrawer);
+
+  // ---- 側邊欄釘選收合：讓畫面更大，收合後只留圖示 ----
+  const SIDEBAR_COLLAPSE_KEY = 'jk_sidebar_collapsed';
+  const pinToggleBtn = document.getElementById('pinToggleBtn');
+  function applySidebarCollapse(collapsed){
+    sidebarEl.classList.toggle('pinned-collapsed', collapsed);
+    pinToggleBtn.textContent = collapsed ? '⟩⟩' : '⟨⟨';
+    pinToggleBtn.title = collapsed ? '展開側邊欄' : '收合側邊欄';
+    localStorage.setItem(SIDEBAR_COLLAPSE_KEY, collapsed ? '1' : '0');
+  }
+  pinToggleBtn.addEventListener('click', ()=>{
+    applySidebarCollapse(!sidebarEl.classList.contains('pinned-collapsed'));
+  });
+  applySidebarCollapse(localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === '1');
+
 
   // ---- 側邊欄分類：展開／收起，每次進工作台一律預設全部收合（不記憶跨次狀態） ----
   document.querySelectorAll('.nav-group').forEach(group=>{

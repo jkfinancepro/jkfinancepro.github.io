@@ -97,9 +97,7 @@
   }
   .tool-card:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(20,50,60,0.1);}
   .tool-card .badge{
-    display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
-    border-radius:8px; background:var(--navy); color:#fff; font-family:"Roboto Mono",monospace;
-    font-size:11px; font-weight:700; margin-bottom:12px;
+    display:block; font-size:26px; margin-bottom:12px; line-height:1;
   }
   .tool-card .t{font-family:"Noto Serif TC",serif; font-weight:700; font-size:14.5px; color:var(--navy); margin-bottom:6px;}
   .tool-card .d{font-size:12px; color:#5B6B70; line-height:1.7;}
@@ -145,16 +143,16 @@
 <script src="../supabase-config.js"></script>
 <script>
   const TOOLS = [
-    {target:'frame-blueprint', badge:'◆', title:'財富地圖', desc:'顧問式引導問卷／財富畫像報告'},
-    {target:'frame-clientrecords', badge:'◆', title:'客戶資料', desc:'已填答的財富地圖紀錄'},
-    {target:'frame-marketnews', badge:'◆', title:'市場快訊', desc:'即時財經新聞／自動分類'},
-    {target:'frame-marketoverview', badge:'◆', title:'市場概況', desc:'即時匯率／全球指數／大盤走勢'},
-    {target:'frame-simulation', badge:'01', title:'沙盤推演必勝', desc:'退休／購屋／教育／遺贈／投資試算機'},
-    {target:'frame-cashflow', badge:'02', title:'收支現金流', desc:'收入／支出／年度結餘／儲蓄率'},
-    {target:'frame-balance', badge:'03', title:'資產負債表', desc:'資產／負債／淨值／負債比'},
-    {target:'frame-loan', badge:'04', title:'貸款試算室', desc:'車貸信貸／房貸／寬限期／利差'},
-    {target:'frame-efficiency', badge:'05', title:'資金效率健檢', desc:'通膨與資金效率快篩'},
-    {target:'frame-feedback', badge:'◆', title:'意見箱', desc:'功能異常回報／改進建議'}
+    {target:'frame-blueprint', badge:'🗺️', title:'財富地圖', desc:'顧問式引導問卷／財富畫像報告'},
+    {target:'frame-clientrecords', badge:'🗂️', title:'客戶資料', desc:'已填答的財富地圖紀錄'},
+    {target:'frame-marketnews', badge:'📰', title:'市場快訊', desc:'即時財經新聞／自動分類'},
+    {target:'frame-marketoverview', badge:'📊', title:'市場概況', desc:'即時匯率／全球指數／大盤走勢'},
+    {target:'frame-simulation', badge:'🎯', title:'沙盤推演必勝', desc:'退休／購屋／教育／遺贈／投資試算機'},
+    {target:'frame-cashflow', badge:'💧', title:'收支現金流', desc:'收入／支出／年度結餘／儲蓄率'},
+    {target:'frame-balance', badge:'⚖️', title:'資產負債表', desc:'資產／負債／淨值／負債比'},
+    {target:'frame-loan', badge:'🏦', title:'貸款試算室', desc:'車貸信貸／房貸／寬限期／利差'},
+    {target:'frame-efficiency', badge:'📈', title:'資金效率健檢', desc:'通膨與資金效率快篩'},
+    {target:'frame-feedback', badge:'📮', title:'意見箱', desc:'功能異常回報／改進建議'}
   ];
 
   const grid = document.getElementById('toolsGrid');

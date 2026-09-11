@@ -177,6 +177,8 @@
   .loading-bar{height:14px;border-radius:7px;background:rgba(255,255,255,0.15);overflow:hidden;position:relative;}
   .loading-bar-fill{height:100%;background:linear-gradient(90deg,#8FC4D8,var(--warm));border-radius:7px;width:0%;transition:width .18s linear;}
   .loading-pct{text-align:center;margin-top:12px;font-family:"Roboto Mono",monospace;font-size:22px;font-weight:700;letter-spacing:.05em;}
+  .loading-sub{text-align:center;margin-top:22px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.8;}
+  .loading-cycle{text-align:center;margin-top:6px;font-size:13px;color:#BFE0EA;font-family:"Roboto Mono",monospace;min-height:20px;}
 
   .report-toggle{display:flex;gap:8px;margin-bottom:24px;justify-content:center;}
   .report-toggle button{padding:10px 22px;border-radius:24px;border:1.5px solid var(--line);background:#fff;font-size:13.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;}
@@ -184,6 +186,35 @@
   .report-view{display:none;}
   .report-view.active{display:block;}
   .report-section{margin-bottom:26px;padding-bottom:22px;border-bottom:1px dashed var(--line);}
+
+  /* ---------- 報告封面 ---------- */
+  .report-cover{
+    position:relative; overflow:hidden; border-radius:16px;
+    min-height:520px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(150deg, var(--navy) 0%, var(--teal-deep) 55%, var(--teal) 100%);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    margin-bottom:0; padding-bottom:0; border-bottom:none;
+  }
+  .cover-bg-lines{position:absolute; inset:0; width:100%; height:100%;}
+  .cover-content{position:relative; z-index:2; text-align:center; padding:40px 30px; color:#fff;}
+  .cover-eyebrow{
+    font-family:'Roboto Mono',monospace; font-size:11px; letter-spacing:.28em; text-transform:uppercase;
+    color:#BFE0EA; margin-bottom:30px;
+  }
+  .cover-title{
+    font-family:"Noto Serif TC",serif; font-weight:700; color:#fff;
+    font-size:clamp(24px,3.6vw,36px); line-height:1.6; margin-bottom:28px;
+  }
+  .cover-brand-marks{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    font-family:'Roboto Mono',monospace; font-size:12px; letter-spacing:.14em;
+    color:rgba(255,255,255,0.65); margin-bottom:34px;
+  }
+  .cover-brand-marks .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.4);}
+  .cover-meta{
+    font-family:'Roboto Mono',monospace; font-size:12px; color:rgba(255,255,255,0.7);
+    line-height:2.2;
+  }
   .report-section:last-child{border-bottom:none;}
   .report-section h3{font-size:15px;color:var(--teal-deep);margin-bottom:12px;}
   .report-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13.5px;}
@@ -377,6 +408,8 @@
   <div class="loading-bar-wrap">
     <div class="loading-bar"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
     <div class="loading-pct" id="loadingPct">0%</div>
+    <div class="loading-sub">評估計算中，等待時間約30-60秒，請稍後</div>
+    <div class="loading-cycle" id="loadingCycle">評估人生階段.......</div>
   </div>
 </div>
 
@@ -460,6 +493,28 @@ const liabilityGroups = [
 ];
 
 function money(n){const v=Math.round(n||0);return (v<0?"-$":"$")+Math.abs(v).toLocaleString("zh-TW");}
+
+/* ---------------- 金額輸入框：邊打邊加千分位逗號 ---------------- */
+// 讀取數字一律要用這個，不能直接用 el.value（因為欄位現在存的是帶逗號的文字）
+function parseNum(str){
+  return Number(String(str==null?'':str).replace(/,/g,'')) || 0;
+}
+// 只保留數字字元，加上千分位逗號（金額都是整數，不處理小數點）
+function formatThousands(str){
+  const clean = String(str==null?'':str).replace(/[^\d]/g,'');
+  if(!clean) return '';
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+// 綁在 input 的 input 事件上：邊打邊格式化，同時保住游標位置不會跳來跳去
+function formatOnInput(e){
+  const el = e.target;
+  const cursorFromEnd = el.value.length - el.selectionStart;
+  const formatted = formatThousands(el.value);
+  el.value = formatted;
+  const pos = Math.max(0, formatted.length - cursorFromEnd);
+  el.setSelectionRange(pos, pos);
+  return formatted;
+}
 function getCurrentAge(){const y=parseInt(basicA.dobY);if(!y)return null;return new Date().getFullYear()-y;}
 function yearsUntil(targetAge){
   const age = getCurrentAge();
@@ -500,14 +555,14 @@ function renderDualGroups(groups, mountId, totalId, opts){
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><input type="text" value="${row.name}" placeholder="項目名稱"></td>
-        <td><input type="number" value="${row.monthly||0}" min="0"></td>
-        <td><input type="number" value="${row.once||0}" min="0"></td>
+        <td><input type="text" inputmode="numeric" value="${row.monthly?formatThousands(row.monthly):''}" placeholder="0"></td>
+        <td><input type="text" inputmode="numeric" value="${row.once?formatThousands(row.once):''}" placeholder="0"></td>
         <td><button class="row-del" type="button">✕</button></td>
       `;
       const [nameI, mI, oI] = tr.querySelectorAll("input");
       nameI.addEventListener("input", e=>{row.name=e.target.value;});
-      mI.addEventListener("input", e=>{row.monthly=Number(e.target.value)||0; updateSubtotal();});
-      oI.addEventListener("input", e=>{row.once=Number(e.target.value)||0; updateSubtotal();});
+      mI.addEventListener("input", e=>{row.monthly=parseNum(formatOnInput(e)); updateSubtotal();});
+      oI.addEventListener("input", e=>{row.once=parseNum(formatOnInput(e)); updateSubtotal();});
       tr.querySelector(".row-del").addEventListener("click", ()=>{
         const i=g.rows.indexOf(row); if(i>-1) g.rows.splice(i,1);
         tr.remove(); updateSubtotal();
@@ -556,12 +611,12 @@ function renderSingleGroups(groups, mountId, totalId, opts){
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><input type="text" value="${row.name}" placeholder="項目名稱"></td>
-        <td><input type="number" value="${row.amount||0}" min="0"></td>
+        <td><input type="text" inputmode="numeric" value="${row.amount?formatThousands(row.amount):''}" placeholder="0"></td>
         <td><button class="row-del" type="button">✕</button></td>
       `;
       const [nameI, aI] = tr.querySelectorAll("input");
       nameI.addEventListener("input", e=>{row.name=e.target.value;});
-      aI.addEventListener("input", e=>{row.amount=Number(e.target.value)||0; updateSubtotal();});
+      aI.addEventListener("input", e=>{row.amount=parseNum(formatOnInput(e)); updateSubtotal();});
       tr.querySelector(".row-del").addEventListener("click", ()=>{
         const i=g.rows.indexOf(row); if(i>-1) g.rows.splice(i,1);
         tr.remove(); updateSubtotal();
@@ -828,7 +883,7 @@ const PAGES = [
          </div>
          <div class="field">
            <label>原始投入成本（總共投入多少本金，不是市值）</label>
-           <input type="number" id="in-investCostBasis" min="0" placeholder="0">
+           <input type="text" inputmode="numeric" id="in-investCostBasis" placeholder="0">
          </div>
        </div>
        <div class="field-row" style="margin-top:16px;">
@@ -1204,9 +1259,9 @@ function bindPageInputs(id){
     const costEl = document.getElementById('in-investCostBasis');
     const yearsEl = document.getElementById('in-investHoldYears');
     const previewEl = document.getElementById('in-investCurrentPreview');
-    costEl.value = investCostBasis || '';
+    costEl.value = investCostBasis ? formatThousands(investCostBasis) : '';
     yearsEl.value = investHoldYears || '';
-    costEl.addEventListener('input', e=>{ investCostBasis = Number(e.target.value)||0; });
+    costEl.addEventListener('input', e=>{ investCostBasis = parseNum(formatOnInput(e)); });
     yearsEl.addEventListener('input', e=>{ investHoldYears = Number(e.target.value)||0; });
 
     function updateInvestPreview(){
@@ -1261,27 +1316,27 @@ function renderGoalCalcCards(){
         <div class="goal-calc-title"><span class="t">🎯 樂活退休</span><button type="button" class="goal-del-btn" title="移除">✕</button></div>
         <div class="field-row">
           <div class="field"><label>預計幾歲開始退休？</label><input type="number" class="ga" placeholder="例如 55"></div>
-          <div class="field"><label>希望每月有多少生活費／預算？</label><input type="number" class="gm" placeholder="例如 40000"></div>
+          <div class="field"><label>希望每月有多少生活費／預算？</label><input type="text" inputmode="numeric" class="gm" placeholder="例如 40,000"></div>
         </div>
         <a href="simulation.html?tab=retirement" target="_blank" rel="noopener" class="calc-link">🔗 計算機試算</a>
       `;
       const ageI = card.querySelector('.ga'), monI = card.querySelector('.gm');
-      ageI.value = c.age||''; monI.value = c.monthly||'';
+      ageI.value = c.age||''; monI.value = c.monthly?formatThousands(c.monthly):'';
       ageI.addEventListener('input', e=>{ c.age = e.target.value; });
-      monI.addEventListener('input', e=>{ c.monthly = e.target.value; });
+      monI.addEventListener('input', e=>{ c.monthly = formatOnInput(e); });
     } else if(goalName === "旅遊基金"){
       card.innerHTML = `
         <div class="goal-calc-title"><span class="t">🎯 旅遊基金</span><button type="button" class="goal-del-btn" title="移除">✕</button></div>
         <div class="field-row">
           <div class="field"><label>預計幾歲開始一直旅遊？</label><input type="number" class="ga" placeholder="例如 50"></div>
-          <div class="field"><label>希望每年有多少旅遊基金／預算？</label><input type="number" class="gy2" placeholder="例如 150000"></div>
+          <div class="field"><label>希望每年有多少旅遊基金／預算？</label><input type="text" inputmode="numeric" class="gy2" placeholder="例如 150,000"></div>
         </div>
         <a href="simulation.html?tab=invest" target="_blank" rel="noopener" class="calc-link">🔗 計算機試算</a>
       `;
       const ageI = card.querySelector('.ga'), yearI = card.querySelector('.gy2');
-      ageI.value = c.age||''; yearI.value = c.yearly||'';
+      ageI.value = c.age||''; yearI.value = c.yearly?formatThousands(c.yearly):'';
       ageI.addEventListener('input', e=>{ c.age = e.target.value; });
-      yearI.addEventListener('input', e=>{ c.yearly = e.target.value; });
+      yearI.addEventListener('input', e=>{ c.yearly = formatOnInput(e); });
     } else {
       const label = goalName==='自行輸入' ? (visionA.customGoalName||'自訂目標') : goalName;
       const tabMap = {"購屋計劃":"house", "子女教育":"education", "第一桶金":"invest", "緊急預備金":"invest"};
@@ -1290,14 +1345,14 @@ function renderGoalCalcCards(){
         <div class="goal-calc-title"><span class="t">🎯 ${label}</span><button type="button" class="goal-del-btn" title="移除">✕</button></div>
         <div class="field-row">
           <div class="field"><label>預計幾歲要達成？</label><input type="number" class="ga" placeholder="例如 40"></div>
-          <div class="field"><label>大概需要準備多少錢？</label><input type="number" class="gt" placeholder="例如 2000000"></div>
+          <div class="field"><label>大概需要準備多少錢？</label><input type="text" inputmode="numeric" class="gt" placeholder="例如 2,000,000"></div>
         </div>
         <a href="simulation.html?tab=${targetTab}" target="_blank" rel="noopener" class="calc-link">🔗 計算機試算</a>
       `;
       const ageI = card.querySelector('.ga'), targetI = card.querySelector('.gt');
-      ageI.value = c.age||''; targetI.value = c.target||'';
+      ageI.value = c.age||''; targetI.value = c.target?formatThousands(c.target):'';
       ageI.addEventListener('input', e=>{ c.age = e.target.value; });
-      targetI.addEventListener('input', e=>{ c.target = e.target.value; });
+      targetI.addEventListener('input', e=>{ c.target = formatOnInput(e); });
     }
     card.querySelector('.goal-del-btn').addEventListener('click', ()=> removeGoal(goalName));
     mount.appendChild(card);
@@ -1307,9 +1362,9 @@ function renderGoalCalcCards(){
 /* ---------------- 財富願景：目標金額與達成率（報告用） ---------------- */
 function computeGoalTarget(goalName){
   const c = visionA.calc[goalName] || {};
-  if(goalName === "樂活退休"){ return (parseFloat(c.monthly)||0) * 12 * 25; }
-  if(goalName === "旅遊基金"){ return (parseFloat(c.yearly)||0) * 25; }
-  return parseFloat(c.target)||0;
+  if(goalName === "樂活退休"){ return parseNum(c.monthly) * 12 * 25; }
+  if(goalName === "旅遊基金"){ return parseNum(c.yearly) * 25; }
+  return parseNum(c.target);
 }
 function computeGoalAchievement(goalName){
   const c = visionA.calc[goalName] || {};
@@ -1567,7 +1622,7 @@ function buildFinancialAnalysisHTML(){
 
   if(m.emergencyMonths!==null && m.emergencyMonths<6 && !cashflowNegative){
     const emergencyGoal = visionA.goals.includes('緊急預備金') ? visionA.calc['緊急預備金'] : null;
-    const targetAmt = emergencyGoal && emergencyGoal.target ? parseFloat(emergencyGoal.target) : m.monthlyExpense*6;
+    const targetAmt = emergencyGoal && emergencyGoal.target ? parseNum(emergencyGoal.target) : m.monthlyExpense*6;
     priorityCards.push({
       title:'補足緊急備用金，讓生活更有底氣',
       body:`您目前有 ${money(Math.round(m.liquidAssets))} 元的活存，但考量到家庭每月 ${money(Math.round(m.monthlyExpense))} 元的支出，這筆錢大約只能支撐 ${m.emergencyMonths.toFixed(1)} 個月。面對生活中的不確定性，例如工作轉換、家庭成員生病或突發意外，建議您可以將緊急備用金逐步累積到至少能支撐 6 到 12 個月的家庭開銷。${m.annualBonus>0 ? `您可以將每年 ${money(m.annualBonus)} 元的獎金，撥出一部分來加速這個目標的達成。` : (cashflowTight ? `目前月儲蓄率約 ${(m.savingsRate*100).toFixed(1)}%，可以先從固定提撥一小部分開始累積。` : '')}`,
@@ -1661,9 +1716,9 @@ function buildFullAnswerSummaryHTML(){
     const c = visionA.calc[g] || {};
     const parts = [];
     if(c.age) parts.push(c.age+'歲');
-    if(c.monthly) parts.push('月被動收入'+money(parseFloat(c.monthly)));
-    if(c.yearly) parts.push('年花費'+money(parseFloat(c.yearly)));
-    if(c.target) parts.push('目標'+money(parseFloat(c.target)));
+    if(c.monthly) parts.push('月被動收入'+money(parseNum(c.monthly)));
+    if(c.yearly) parts.push('年花費'+money(parseNum(c.yearly)));
+    if(c.target) parts.push('目標'+money(parseNum(c.target)));
     return `${label}${parts.length?'（'+parts.join('・')+'）':''}`;
   }).join('、') || '—';
 
@@ -1815,19 +1870,33 @@ async function tryLoadRecordFromQuery(){
   }catch(e){ console.error('讀取客戶紀錄失敗', e); return false; }
 }
 
+const CYCLE_MESSAGES = ["評估人生階段.......","計算收支流量.......","計算資產負債.......","評估財務個性......."];
+
 function runLoadingThenReport(){
   showScreen('screen-loading');
   document.getElementById('screen-loading').classList.add('active');
   const fill = document.getElementById('loadingBarFill');
   const pct = document.getElementById('loadingPct');
   const msg = document.getElementById('loadingMsg');
-  let p = 0;
+  const cycleEl = document.getElementById('loadingCycle');
+  const TOTAL_MS = 20000; // 故意拉長到20秒，讓使用者感受到「有在認真計算」
+  const startTime = Date.now();
   msg.textContent = LOADING_MESSAGES[0];
+
+  let cycleIdx = 0;
+  cycleEl.textContent = CYCLE_MESSAGES[0];
+  const cycleTimer = setInterval(()=>{
+    cycleIdx = (cycleIdx+1) % CYCLE_MESSAGES.length;
+    cycleEl.textContent = CYCLE_MESSAGES[cycleIdx];
+  }, 5000);
+
   const timer = setInterval(()=>{
-    p += Math.random()*9 + 4;
+    const elapsed = Date.now() - startTime;
+    let p = Math.min(100, (elapsed/TOTAL_MS)*100);
     if(p >= 100){
       p = 100;
       clearInterval(timer);
+      clearInterval(cycleTimer);
       setTimeout(()=>{
         document.getElementById('screen-loading').classList.remove('active');
         renderReport();
@@ -1838,7 +1907,7 @@ function runLoadingThenReport(){
     pct.textContent = Math.floor(p) + '%';
     const msgIdx = Math.min(LOADING_MESSAGES.length-1, Math.floor(p/100*LOADING_MESSAGES.length));
     msg.textContent = LOADING_MESSAGES[msgIdx];
-  }, 220);
+  }, 150);
 }
 
 function buildCashflowBreakdownHTML(uid, opts){
@@ -2058,11 +2127,25 @@ function buildReportCoverHTML(){
   const today = new Date();
   const dateStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
   const namePart = loadedClientName ? loadedClientName+' ' : '';
+  const advisorLine = currentAdvisorName ? `顧問：${currentAdvisorName}` : '';
   return `
-    <div class="report-section" style="text-align:center; padding:60px 20px; border-bottom:none;">
-      <div style="font-family:'Roboto Mono',monospace; font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--teal-deep); margin-bottom:28px;">JK Finance · Financial Health Check</div>
-      <h1 style="font-size:clamp(24px,3.4vw,34px); color:var(--navy); margin-bottom:18px; line-height:1.6;">${namePart}財務健檢報告書</h1>
-      <div style="font-family:'Roboto Mono',monospace; font-size:12.5px; color:var(--ink-soft);">產出日期：${dateStr}</div>
+    <div class="report-cover">
+      <svg class="cover-bg-lines" viewBox="0 0 400 560" preserveAspectRatio="none">
+        <polyline points="0,420 60,380 110,400 170,320 230,340 400,220" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="2"/>
+        <circle cx="340" cy="90" r="70" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.5"/>
+        <circle cx="40" cy="480" r="46" fill="none" stroke="rgba(243,201,138,0.16)" stroke-width="1.5"/>
+      </svg>
+      <div class="cover-content">
+        <div class="cover-eyebrow">JK Finance · Financial Health Check</div>
+        <h1 class="cover-title">${namePart}財務健檢報告書</h1>
+        <div class="cover-brand-marks">
+          <span>覺醒</span><span class="dot"></span><span>金錢</span><span class="dot"></span><span>故事</span>
+        </div>
+        <div class="cover-meta">
+          ${advisorLine ? `<div>${advisorLine}</div>` : ''}
+          <div>產出日期：${dateStr}</div>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -2134,7 +2217,14 @@ document.querySelectorAll('.report-toggle button').forEach(btn=>{
 });
 
 /* ---------------- 初始化：若網址帶有 recordId，直接載入該筆客戶紀錄並跳到報告畫面 ---------------- */
+let currentAdvisorName = '';
 (async function initFromQuery(){
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(session){
+      currentAdvisorName = session.user.user_metadata?.display_name || session.user.email || '';
+    }
+  }catch(e){}
   if(await tryLoadRecordFromQuery()){
     renderReport();
     showScreen('screen-report');
