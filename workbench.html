@@ -16,11 +16,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#16323F;
-    --ink-deep:#0F232C;
+    --navy:#16323F;
+    --teal-deep:#1F5C73;
+    --teal:#2E7391;
+    --teal-tint:#E6F0F2;
+    --teal-light-text:#BFE0EA;
+    --warm:#C97B3D;
+    --warm-deep:#A85F27;
+    --warm-tint:#FBEFE2;
     --paper:#F5F7F6;
-    --brass:#2E7391;
-    --brass-light:#8FC4D8;
+    --card:#FFFFFF;
+    --ink:#182226;
+    --ink-soft:#5B6B70;
+    --positive:#2E7D5B;
+    --negative:#B3492F;
     --line:rgba(245,247,246,0.10);
     --text-dim:rgba(245,247,246,0.62);
   }
@@ -39,7 +48,7 @@
   /* ---------- Sidebar ---------- */
   aside.sidebar{
     width:260px; flex-shrink:0;
-    background:linear-gradient(180deg, var(--ink) 0%, var(--ink-deep) 100%);
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy) 100%);
     color:var(--paper);
     display:flex; flex-direction:column;
     border-right:1px solid var(--line);
@@ -85,11 +94,11 @@
     display:inline-block; font-size:10px; color:rgba(245,247,246,0.5);
     text-decoration:none; margin-bottom:8px; transition:color .15s ease;
   }
-  .brand-home-link:hover{color:var(--brass-light);}
+  .brand-home-link:hover{color:var(--teal-light-text);}
   .brand .eyebrow{
     font-family:"Roboto Mono", monospace;
     font-size:9px; letter-spacing:.16em; text-transform:uppercase;
-    color:var(--brass-light); margin-bottom:6px;
+    color:var(--teal-light-text); margin-bottom:6px;
   }
   .brand h1{
     font-family:"Noto Serif TC", serif;
@@ -125,7 +134,7 @@
     display:flex; align-items:center; gap:9px;
   }
   nav.modules button .name .num{
-    font-family:"Roboto Mono", monospace; font-size:10.5px; color:var(--brass);
+    font-family:"Roboto Mono", monospace; font-size:10.5px; color:var(--teal);
     width:16px; flex-shrink:0;
   }
   nav.modules button .desc{
@@ -136,7 +145,7 @@
   nav.modules button.active{
     background:rgba(46,115,145,0.18);
     color:var(--paper);
-    border-left-color:var(--brass);
+    border-left-color:var(--teal);
   }
   nav.modules button.active .desc{color:rgba(245,247,246,0.6);}
 
@@ -156,21 +165,39 @@
   .user-menu-item{
     width:100%; display:flex; align-items:center; gap:9px; text-align:left;
     padding:10px 12px; border:none; background:none; border-radius:8px;
-    font-size:13px; font-weight:600; color:var(--ink); cursor:pointer;
+    font-size:13px; font-weight:600; color:var(--navy); cursor:pointer;
     font-family:"Noto Sans TC", sans-serif;
   }
   .user-menu-item:hover{background:var(--paper);}
   .user-menu-item.danger{color:#B3492F;}
   .user-menu-item .icon{font-size:13px; width:16px; text-align:center;}
   .user-menu-fontsize{padding:8px 12px 10px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin:4px 0;}
-  .user-menu-label{font-size:11px; font-weight:700; color:var(--ink-soft); margin-bottom:8px;}
+  .user-menu-label{font-size:11px; font-weight:700; color:var(--navy); margin-bottom:8px;}
   .font-size-pills{display:flex; gap:6px;}
   .font-size-pill{
-    flex:1; padding:7px 0; border:1.5px solid var(--line); border-radius:8px; background:var(--paper);
-    font-size:12px; font-weight:700; color:var(--ink-soft); cursor:pointer;
+    flex:1; padding:7px 0; border:1.5px solid var(--navy); border-radius:8px; background:#fff;
+    font-size:12px; font-weight:700; color:var(--navy); cursor:pointer;
     font-family:"Noto Sans TC", sans-serif;
   }
+  .font-size-pill:hover{border-color:var(--teal); color:var(--teal);}
   .font-size-pill.active{background:var(--navy); border-color:var(--navy); color:#fff;}
+
+  .theme-swatch-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .theme-swatch{
+    position:relative; height:34px; border-radius:8px; cursor:pointer;
+    border:2px solid transparent; overflow:hidden;
+  }
+  .theme-swatch.active{border-color:var(--navy);}
+  .theme-swatch.active::after{
+    content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:13px; font-weight:700; text-shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+  .theme-swatch .half{position:absolute; top:0; bottom:0; width:50%;}
+  .theme-swatch .half.l{left:0;} .theme-swatch .half.r{right:0;}
+  .theme-swatch-lock{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.45); color:#fff; font-size:11px;
+  }
 
   /* ---------- 帳號設定彈窗 ---------- */
   .settings-overlay{
@@ -180,11 +207,11 @@
   .settings-overlay.show{display:flex;}
   .settings-box{
     background:#fff; border-radius:16px; padding:28px; max-width:400px; width:100%;
-    box-shadow:0 20px 60px rgba(20,50,60,0.3); color:var(--ink);
+    box-shadow:0 20px 60px rgba(20,50,60,0.3); color:var(--navy);
     font-family:"Noto Sans TC", sans-serif; max-height:88vh; overflow-y:auto;
   }
   .settings-box h3{
-    font-family:"Noto Serif TC", serif; font-size:17px; color:var(--ink); margin-bottom:6px;
+    font-family:"Noto Serif TC", serif; font-size:17px; color:var(--navy); margin-bottom:6px;
   }
   .settings-current-email{font-size:12px; color:rgba(24,34,38,0.6); margin-bottom:22px;}
   .settings-error{
@@ -200,31 +227,31 @@
   .settings-field{margin-bottom:22px; padding-bottom:22px; border-bottom:1px solid var(--line);}
   .settings-field:last-of-type{border-bottom:none; margin-bottom:8px; padding-bottom:0;}
   .settings-field label{
-    display:block; font-size:12px; font-weight:700; color:var(--ink); margin-bottom:8px;
+    display:block; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:8px;
   }
   .settings-field input{
     width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px;
-    font-size:13.5px; font-family:"Noto Sans TC", sans-serif; color:var(--ink);
+    font-size:13.5px; font-family:"Noto Sans TC", sans-serif; color:var(--navy);
     background:var(--paper); box-sizing:border-box;
   }
-  .settings-field input:focus{outline:none; border-color:var(--brass);}
+  .settings-field input:focus{outline:none; border-color:var(--teal);}
   .settings-btn{
     width:100%; margin-top:10px; padding:11px; border:none; border-radius:20px;
-    background:var(--ink); color:#fff; font-size:13px; font-weight:700; cursor:pointer;
+    background:var(--navy); color:#fff; font-size:13px; font-weight:700; cursor:pointer;
     font-family:"Noto Sans TC", sans-serif;
   }
-  .settings-btn:hover{background:var(--brass);}
+  .settings-btn:hover{background:var(--teal);}
   .settings-btn:disabled{opacity:.6; cursor:default;}
   .settings-close-btn{
     width:100%; padding:11px; border:1px solid var(--line); border-radius:20px;
     background:none; color:rgba(24,34,38,0.6); font-size:13px; font-weight:700; cursor:pointer;
     font-family:"Noto Sans TC", sans-serif;
   }
-  .settings-close-btn:hover{border-color:var(--brass); color:var(--brass);}
+  .settings-close-btn:hover{border-color:var(--teal); color:var(--teal);}
   .user-avatar{
     width:34px; height:34px; border-radius:50%; flex-shrink:0;
-    background:linear-gradient(135deg,var(--brass) 0%,var(--brass-light) 100%);
-    color:var(--ink-deep); font-weight:800; font-size:14px;
+    background:linear-gradient(135deg,var(--teal) 0%,var(--teal-light-text) 100%);
+    color:var(--navy); font-weight:800; font-size:14px;
     display:flex; align-items:center; justify-content:center;
     font-family:"Noto Serif TC", serif;
   }
@@ -235,13 +262,13 @@
     font-size:11px; color:rgba(245,247,246,0.45); cursor:pointer;
     text-decoration:underline; text-underline-offset:2px;
   }
-  .logout-btn:hover{color:var(--brass-light);}
+  .logout-btn:hover{color:var(--teal-light-text);}
 
   .sidebar-footer{
     padding:16px 22px 22px; border-top:1px solid var(--line);
     font-size:11px; color:rgba(245,247,246,0.34); line-height:1.7;
   }
-  .sidebar-footer .plus{color:var(--brass-light); font-weight:600;}
+  .sidebar-footer .plus{color:var(--teal-light-text); font-weight:600;}
 
   /* ---------- Main content ---------- */
   main{flex:1; height:100vh; position:relative; background:var(--paper);}
@@ -267,7 +294,7 @@
     /* ---------- 手機頂部窄列：漢堡按鈕 + 目前模組名稱 ---------- */
     .mobile-topbar{
       display:flex; align-items:center; gap:12px; flex-shrink:0;
-      background:var(--ink-deep); color:var(--paper);
+      background:var(--navy); color:var(--paper);
       padding:12px 16px; padding-top:calc(12px + env(safe-area-inset-top));
       border-bottom:1px solid var(--line);
     }
@@ -293,7 +320,7 @@
     nav.modules{display:block; flex:1; padding:16px 12px;}
     nav.modules button{width:100%; white-space:normal; margin-bottom:4px; border-left:2px solid transparent; border-bottom:none;}
     nav.modules button .desc{display:block;}
-    nav.modules button.active{border-left-color:var(--brass); border-bottom-color:transparent;}
+    nav.modules button.active{border-left-color:var(--teal); border-bottom-color:transparent;}
     .nav-group-body{max-height:2000px;} /* 手機抽屜是整頁捲動，不需要靠max-height限制高度 */
     .nav-group.collapsed .nav-group-body{max-height:0;}
     .user-box{flex-shrink:0;}
@@ -431,6 +458,10 @@
             <button class="font-size-pill" data-size="large">大</button>
           </div>
         </div>
+        <div class="user-menu-fontsize">
+          <div class="user-menu-label">主題色系</div>
+          <div class="theme-swatch-grid" id="themeSwatchGrid"></div>
+        </div>
         <button class="user-menu-item danger" id="menuLogout">
           <span class="icon">↩</span> 登出
         </button>
@@ -481,6 +512,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="theme-config.js"></script>
 <script>
   /* ---------- 登入狀態驗證（真正串接 Supabase） ---------- */
   (async function checkAuth(){
@@ -591,6 +623,39 @@
     pill.addEventListener('click', ()=> applyFontScale(pill.dataset.size));
   });
   applyFontScale(localStorage.getItem(FONT_SCALE_KEY) || 'small');
+
+  // ---- 主題色系：套用到工作台自己，也注入每個同源iframe（目前全部開放，之後可依方案鎖定） ----
+  const THEME_KEY = 'jk_theme';
+  function applyThemeEverywhere(themeKey){
+    jkApplyTheme(themeKey, document);
+    frames.forEach(f=>{
+      try{
+        if(f.contentDocument) jkApplyTheme(themeKey, f.contentDocument);
+      }catch(e){}
+    });
+    document.querySelectorAll('.theme-swatch').forEach(s=>{
+      s.classList.toggle('active', s.dataset.theme===themeKey);
+    });
+    localStorage.setItem(THEME_KEY, themeKey);
+  }
+  // iframe 各自的載入時機不一定跟主題套用同步，載入完成時要重新套用一次目前選的主題
+  frames.forEach(f=>{
+    f.addEventListener('load', ()=>{
+      const current = localStorage.getItem(THEME_KEY) || 'free';
+      try{ if(f.contentDocument) jkApplyTheme(current, f.contentDocument); }catch(e){}
+    });
+  });
+  const themeGrid = document.getElementById('themeSwatchGrid');
+  themeGrid.innerHTML = Object.entries(JK_THEMES).map(([key, t])=>`
+    <div class="theme-swatch" data-theme="${key}" title="${t.label}">
+      <div class="half l" style="background:${t.navy};"></div>
+      <div class="half r" style="background:${t.teal};"></div>
+    </div>
+  `).join('');
+  themeGrid.querySelectorAll('.theme-swatch').forEach(sw=>{
+    sw.addEventListener('click', ()=> applyThemeEverywhere(sw.dataset.theme));
+  });
+  applyThemeEverywhere(localStorage.getItem(THEME_KEY) || 'free');
 
 
   // 只要「目前要顯示的那一頁」載入完成就先讓畫面出現，不用等其他背景模組全部載完，

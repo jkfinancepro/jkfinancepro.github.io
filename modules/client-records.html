@@ -176,7 +176,7 @@
 
 <main class="wrap">
   <div class="toolbar">
-    <div class="count-label" id="countLabel">共 0 筆紀錄</div>
+    <div class="count-label" id="countLabel">目前 0 筆 ／ 上限 不限</div>
     <div style="display:flex; align-items:center; gap:14px;">
       <div class="count-label" id="dueLabel"></div>
       <button class="btn-trash" id="btnToggleTrash">🗑️ 已刪除 (<span id="trashCount">0</span>)</button>
@@ -228,6 +228,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-config.js"></script>
 <script>
+// 目前尚未區分方案，先固定為不限；之後有方案分級（例如20/100筆）時，改這裡的數字即可
+const PLAN_RECORD_LIMIT = null; // null 代表不限，或改成數字如 20、100
+
 const STATUS_OPTIONS = [
   {key:'', label:'未設定狀態', color:'var(--ink-soft)', bg:'rgba(91,107,112,0.08)'},
   {key:'tracking', label:'追蹤中', color:'#B8791E', bg:'rgba(184,121,30,0.1)'},
@@ -323,7 +326,7 @@ async function render(){
   const allRecords = await fetchAllRecords();
   const records = allRecords.filter(r=>!r.deletedAt);
   const trashed = allRecords.filter(r=>r.deletedAt);
-  document.getElementById('countLabel').innerHTML = '共 <b>'+records.length+'</b> 筆紀錄';
+  document.getElementById('countLabel').innerHTML = '目前 <b>'+records.length+'</b> 筆 ／ 上限 '+(PLAN_RECORD_LIMIT ? PLAN_RECORD_LIMIT : '不限');
   document.getElementById('trashCount').textContent = trashed.length;
   const dueCount = records.filter(r=>{ const d=daysUntil(r.followUpDate); return d!==null && d<=0; }).length;
   document.getElementById('dueLabel').innerHTML = dueCount>0 ? '<span style="color:var(--negative);font-weight:700;">'+dueCount+' 筆待追蹤</span>' : '';

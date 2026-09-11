@@ -200,7 +200,7 @@
       <label for="chartSymbolSelect">標的</label>
       <select id="chartSymbolSelect">
         <optgroup label="指數">
-          <option value="TWSE:IX0001" selected>台灣加權指數</option>
+          <option value="TVC:TWII" selected>台灣加權指數</option>
           <option value="FOREXCOM:SPXUSD">標普 500</option>
           <option value="FOREXCOM:NSXUSD">那斯達克</option>
           <option value="FOREXCOM:DJI">道瓊工業</option>
@@ -217,7 +217,7 @@
       <div id="tvChartContainer" style="height:600px;"></div>
     </div>
     <div class="note-box">
-      行情資料由 <a href="https://www.tradingview.com" target="_blank" rel="noopener" style="color:var(--teal-deep);">TradingView</a> 提供，僅供參考、非投資建議。上方可切換標的，圖表內建日／週／月切換與畫線工具。
+      行情資料由 <a href="https://www.tradingview.com" target="_blank" rel="noopener" style="color:var(--teal-deep);">TradingView</a> 提供，僅供參考、非投資建議。上方下拉選單是常用標的快捷；也可以直接點圖表左上角的標的名稱，開啟 TradingView 內建搜尋，換成任何你想看的股票或指數。圖表內建日／週／月切換與畫線工具。
     </div>
   </div>
 
@@ -255,7 +255,7 @@ function renderChart(symbol){
     locale: 'zh_TW',
     toolbar_bg: '#F5F7F6',
     enable_publishing: false,
-    allow_symbol_change: false,
+    allow_symbol_change: true,
     hide_side_toolbar: false,
     save_image: false,
     support_host: 'https://www.tradingview.com'
