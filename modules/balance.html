@@ -6,7 +6,7 @@
 <title>資產負債表試算室</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&family=Roboto+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --navy:#16323F;
@@ -97,7 +97,7 @@
   .sum-item{text-align:center;padding:6px 4px;border-right:1px solid rgba(255,255,255,0.14);}
   .sum-item:last-child{border-right:none;}
   .sum-label{font-size:12px;color:#A9C7CF;letter-spacing:.06em;margin-bottom:4px;}
-  .sum-value{font-family:"Noto Serif TC",serif;font-size:clamp(16px,2.4vw,24px);font-weight:700;font-variant-numeric:tabular-nums;}
+  .sum-value{font-family:"Roboto Mono",monospace;font-size:clamp(16px,2.4vw,24px);font-weight:800;font-variant-numeric:tabular-nums;}
   .sum-value.positive{color:#8FE3BE;}
   .sum-value.negative{color:#F3A98C;}
 
@@ -118,7 +118,7 @@
   .group-title{font-weight:700;font-size:15px;color:var(--teal-deep);}
   .group.liability .group-title{color:var(--warm-deep);}
   .group-title small{display:block;font-weight:400;color:var(--ink-soft);font-size:12px;margin-top:2px;}
-  .group-subtotal{font-family:"Noto Serif TC",serif;font-weight:700;font-size:16px;color:var(--navy);white-space:nowrap;}
+  .group-subtotal{font-family:"Roboto Mono",monospace;font-weight:800;font-size:16px;color:var(--navy);white-space:nowrap;}
   .group-subtotal span{font-size:11px;font-weight:400;color:var(--ink-soft);display:block;text-align:right;}
 
   .row-table{width:100%;border-collapse:collapse;}
@@ -129,7 +129,7 @@
   .row-table input[type="text"]:hover,.row-table input[type="text"]:focus{border-color:var(--line);background:#FAFBFB;}
   .row-table input[type="number"]{width:130px;border:1px solid var(--line);background:#fff;font-family:"Noto Sans TC",sans-serif;font-size:14px;padding:7px 8px;border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;}
   .row-table input[type="number"]:focus{outline:2px solid var(--teal);outline-offset:1px;}
-  .row-subtotal{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;color:var(--navy);min-width:96px;white-space:nowrap;}
+  .row-subtotal{font-family:"Roboto Mono",monospace;font-variant-numeric:tabular-nums;font-weight:700;text-align:right;color:var(--navy);min-width:96px;white-space:nowrap;}
   .col-hint{font-size:10.5px;color:var(--ink-soft);font-weight:400;}
   .del-btn{border:none;background:none;color:#B7C2C4;cursor:pointer;font-size:16px;padding:4px 6px;line-height:1;border-radius:6px;}
   .del-btn:hover{color:var(--negative);background:#FBEAE5;}

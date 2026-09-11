@@ -56,6 +56,13 @@
   }
   .field input:focus{ outline:none; border-color:var(--brass); }
 
+  .remember-row{ margin:-8px 0 18px; }
+  .remember-check{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft);
+    cursor:pointer; user-select:none;
+  }
+  .remember-check input{ width:15px; height:15px; cursor:pointer; accent-color:var(--brass); }
+
   .login-btn{
     width:100%; margin-top:8px; padding:13px; border:none; border-radius:9px;
     background:var(--ink); color:#fff; font-size:14.5px; font-weight:700;
@@ -111,6 +118,12 @@
       <label for="password">密碼</label>
       <input type="password" id="password" placeholder="輸入密碼" autocomplete="current-password">
     </div>
+    <div class="remember-row">
+      <label class="remember-check">
+        <input type="checkbox" id="rememberMe">
+        <span>記住此帳號</span>
+      </label>
+    </div>
     <button type="submit" class="login-btn" id="submitBtn">登入</button>
   </form>
 
@@ -147,10 +160,21 @@
     showInfo('密碼已重設成功，請用新密碼登入。');
   }
 
+  // ---- 記住此帳號：頁面載入時，如果之前記過，自動帶入並勾選 ----
+  const REMEMBERED_EMAIL_KEY = 'jk_remembered_email';
+  (function initRememberedEmail(){
+    const saved = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    if(saved){
+      document.getElementById('email').value = saved;
+      document.getElementById('rememberMe').checked = true;
+    }
+  })();
+
   document.getElementById('loginForm').addEventListener('submit', async function(e){
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
+    const rememberMe = document.getElementById('rememberMe').checked;
     const submitBtn = document.getElementById('submitBtn');
 
     if(!email || !password){
@@ -174,6 +198,13 @@
         showError('登入失敗：' + error.message);
       }
       return;
+    }
+
+    // 登入成功後才真的存／清除，依照這次勾選的狀態為準
+    if(rememberMe){
+      localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+    } else {
+      localStorage.removeItem(REMEMBERED_EMAIL_KEY);
     }
 
     window.location.href = 'workbench.html';

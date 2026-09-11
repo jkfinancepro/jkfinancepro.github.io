@@ -112,6 +112,56 @@
     display:flex; align-items:center; gap:10px;
     padding:14px 22px; border-top:1px solid var(--line);
   }
+
+  /* ---------- 帳號設定彈窗 ---------- */
+  .settings-overlay{
+    display:none; position:fixed; inset:0; background:rgba(15,35,44,0.55);
+    z-index:300; align-items:center; justify-content:center; padding:20px;
+  }
+  .settings-overlay.show{display:flex;}
+  .settings-box{
+    background:#fff; border-radius:16px; padding:28px; max-width:400px; width:100%;
+    box-shadow:0 20px 60px rgba(20,50,60,0.3); color:var(--ink);
+    font-family:"Noto Sans TC", sans-serif; max-height:88vh; overflow-y:auto;
+  }
+  .settings-box h3{
+    font-family:"Noto Serif TC", serif; font-size:17px; color:var(--ink); margin-bottom:6px;
+  }
+  .settings-current-email{font-size:12px; color:rgba(24,34,38,0.6); margin-bottom:22px;}
+  .settings-error{
+    display:none; background:rgba(179,73,47,0.08); border:1px solid rgba(179,73,47,0.25);
+    color:#B3492F; font-size:12px; padding:9px 12px; border-radius:8px; margin-bottom:14px;
+  }
+  .settings-error.show{display:block;}
+  .settings-success{
+    display:none; background:rgba(46,125,91,0.08); border:1px solid rgba(46,125,91,0.25);
+    color:#2E7D5B; font-size:12px; padding:9px 12px; border-radius:8px; margin-bottom:14px;
+  }
+  .settings-success.show{display:block;}
+  .settings-field{margin-bottom:22px; padding-bottom:22px; border-bottom:1px solid var(--line);}
+  .settings-field:last-of-type{border-bottom:none; margin-bottom:8px; padding-bottom:0;}
+  .settings-field label{
+    display:block; font-size:12px; font-weight:700; color:var(--ink); margin-bottom:8px;
+  }
+  .settings-field input{
+    width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px;
+    font-size:13.5px; font-family:"Noto Sans TC", sans-serif; color:var(--ink);
+    background:var(--paper); box-sizing:border-box;
+  }
+  .settings-field input:focus{outline:none; border-color:var(--brass);}
+  .settings-btn{
+    width:100%; margin-top:10px; padding:11px; border:none; border-radius:20px;
+    background:var(--ink); color:#fff; font-size:13px; font-weight:700; cursor:pointer;
+    font-family:"Noto Sans TC", sans-serif;
+  }
+  .settings-btn:hover{background:var(--brass);}
+  .settings-btn:disabled{opacity:.6; cursor:default;}
+  .settings-close-btn{
+    width:100%; padding:11px; border:1px solid var(--line); border-radius:20px;
+    background:none; color:rgba(24,34,38,0.6); font-size:13px; font-weight:700; cursor:pointer;
+    font-family:"Noto Sans TC", sans-serif;
+  }
+  .settings-close-btn:hover{border-color:var(--brass); color:var(--brass);}
   .user-avatar{
     width:34px; height:34px; border-radius:50%; flex-shrink:0;
     background:linear-gradient(135deg,var(--brass) 0%,var(--brass-light) 100%);
@@ -226,7 +276,7 @@
           </button>
           <button class="mod-btn" data-target="frame-clientrecords">
             <span class="name"><span class="num">◆</span>客戶資料</span>
-            <span class="desc">已填答的財富地圖紀錄（存在本機）</span>
+            <span class="desc">已填答的財富地圖紀錄</span>
           </button>
         </div>
       </div>
@@ -276,10 +326,23 @@
           </button>
         </div>
       </div>
+
+      <div class="nav-group" data-group="feedback">
+        <button class="nav-group-header">
+          <span>意見回饋</span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="nav-group-body">
+          <button class="mod-btn" data-target="frame-feedback">
+            <span class="name"><span class="num">◆</span>意見箱</span>
+            <span class="desc">功能異常回報／改進建議</span>
+          </button>
+        </div>
+      </div>
     </nav>
 
     <div class="user-box">
-      <div class="user-avatar" id="userAvatar">J</div>
+      <div class="user-avatar" id="userAvatar" title="帳號設定" style="cursor:pointer;">J</div>
       <div class="user-info">
         <div class="user-name" id="userName">Jess</div>
         <button class="logout-btn" id="logoutBtn">登出</button>
@@ -296,10 +359,36 @@
     <iframe id="frame-balance" src="modules/balance.html" title="資產負債表"></iframe>
     <iframe id="frame-loan" src="modules/loan.html" title="貸款試算室"></iframe>
     <iframe id="frame-efficiency" src="modules/efficiency.html" title="資金效率健檢"></iframe>
+    <iframe id="frame-feedback" src="modules/feedback.html" title="意見箱"></iframe>
     <iframe id="frame-marketnews" src="modules/market-news.html" title="市場快訊"></iframe>
     <iframe id="frame-marketoverview" src="modules/market-overview.html" title="市場概況"></iframe>
     <iframe id="frame-simulation" src="modules/simulation.html" title="沙盤推演必勝"></iframe>
   </main>
+</div>
+
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-box">
+    <h3>帳號設定</h3>
+    <div class="settings-current-email" id="settingsCurrentEmail"></div>
+
+    <div class="settings-error" id="settingsError"></div>
+    <div class="settings-success" id="settingsSuccess"></div>
+
+    <div class="settings-field">
+      <label>更新密碼</label>
+      <input type="password" id="newPasswordInput" placeholder="新密碼（至少6個字元）">
+      <input type="password" id="confirmPasswordInput" placeholder="再輸入一次新密碼" style="margin-top:8px;">
+      <button class="settings-btn" id="btnUpdatePassword">更新密碼</button>
+    </div>
+
+    <div class="settings-field">
+      <label>更新 Email</label>
+      <input type="email" id="newEmailInput" placeholder="新的 Email 地址">
+      <button class="settings-btn" id="btnUpdateEmail">更新 Email</button>
+    </div>
+
+    <button class="settings-close-btn" id="btnCloseSettings">關閉</button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -316,12 +405,70 @@
     const name = user.user_metadata?.display_name || user.email || '顧問';
     document.getElementById('userName').textContent = name;
     document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+    document.getElementById('settingsCurrentEmail').textContent = '目前登入：' + user.email;
     window.currentAdvisorId = user.id; // 讓內嵌的模組（例如客戶資料）之後可以用這個 id 存取自己的資料
   })();
 
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
     await supabaseClient.auth.signOut();
     window.location.href = 'login.html';
+  });
+
+  // ---- 帳號設定彈窗：點頭像開啟，可以更新密碼或 Email ----
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const settingsError = document.getElementById('settingsError');
+  const settingsSuccess = document.getElementById('settingsSuccess');
+  function showSettingsError(text){
+    settingsSuccess.classList.remove('show');
+    settingsError.textContent = text;
+    settingsError.classList.add('show');
+  }
+  function showSettingsSuccess(text){
+    settingsError.classList.remove('show');
+    settingsSuccess.textContent = text;
+    settingsSuccess.classList.add('show');
+  }
+  document.getElementById('userAvatar').addEventListener('click', ()=>{
+    settingsError.classList.remove('show');
+    settingsSuccess.classList.remove('show');
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    document.getElementById('newEmailInput').value = '';
+    settingsOverlay.classList.add('show');
+  });
+  document.getElementById('btnCloseSettings').addEventListener('click', ()=>{
+    settingsOverlay.classList.remove('show');
+  });
+  settingsOverlay.addEventListener('click', (e)=>{
+    if(e.target.id==='settingsOverlay') settingsOverlay.classList.remove('show');
+  });
+
+  document.getElementById('btnUpdatePassword').addEventListener('click', async ()=>{
+    const newPw = document.getElementById('newPasswordInput').value;
+    const confirmPw = document.getElementById('confirmPasswordInput').value;
+    const btn = document.getElementById('btnUpdatePassword');
+    if(!newPw || !confirmPw){ showSettingsError('請完整填寫兩個密碼欄位'); return; }
+    if(newPw.length < 6){ showSettingsError('密碼至少要 6 個字元'); return; }
+    if(newPw !== confirmPw){ showSettingsError('兩次輸入的密碼不一致'); return; }
+    btn.disabled = true; btn.textContent = '更新中…';
+    const { error } = await supabaseClient.auth.updateUser({ password: newPw });
+    btn.disabled = false; btn.textContent = '更新密碼';
+    if(error){ showSettingsError('更新失敗：' + error.message); return; }
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    showSettingsSuccess('密碼已更新成功。');
+  });
+
+  document.getElementById('btnUpdateEmail').addEventListener('click', async ()=>{
+    const newEmail = document.getElementById('newEmailInput').value.trim();
+    const btn = document.getElementById('btnUpdateEmail');
+    if(!newEmail){ showSettingsError('請輸入新的 Email 地址'); return; }
+    btn.disabled = true; btn.textContent = '更新中…';
+    const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
+    btn.disabled = false; btn.textContent = '更新 Email';
+    if(error){ showSettingsError('更新失敗：' + error.message); return; }
+    document.getElementById('newEmailInput').value = '';
+    showSettingsSuccess('請至新信箱收信，點擊確認連結後 Email 才會正式生效。');
   });
 
   const buttons = document.querySelectorAll('.mod-btn');
@@ -360,6 +507,8 @@
   });
   // 讓內嵌的 iframe（例如財富地圖）可以呼叫這個函式跳回首頁
   window.goToHome = ()=> activateFrame('frame-home');
+  // 讓內嵌的 iframe（例如工作台首頁的捷徑卡片）可以呼叫這個函式切換到任何模組
+  window.goToModule = (targetId)=> activateFrame(targetId);
 
   // ---- 手機版：漢堡選單開關全螢幕抽屜 ----
   const sidebarEl = document.querySelector('aside.sidebar');

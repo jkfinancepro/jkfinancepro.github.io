@@ -287,6 +287,8 @@
     .report-toggle{display:none !important;}
     .report-view{display:block !important;}
     .report-view:not(.active){display:none !important;}
+    #reportClient .ratio-wrap{display:none !important;}
+    #reportClient .breakdown-grid{grid-template-columns:1fr 1fr !important;}
   }
 
   .report-timestamp{
@@ -418,6 +420,7 @@ const eventsA = {selected:[]};
 const visionA = {goals:[], customGoalName:"", calc:{}};
 let investCostBasis = 0;
 let investHoldYears = 0;
+let loadedClientName = '';
 
 const incomeGroups = [
   {key:"active", title:"工作收入（主動）", hint:"薪資、接案等持續性主動收入",
@@ -817,11 +820,18 @@ const PAGES = [
        <div class="group-head">
          <div class="group-title">你的股票／基金／ETF等投資部位<small>用來對比「真正的損益」，選填但強烈建議填寫</small></div>
        </div>
+       <div class="report-note" style="margin-bottom:16px;margin-top:0;">這裡的損益對比，會拿上方「投資資產」分類裡「股票／基金／ETF」那一格填的<b>目前市值</b>，跟下面填的原始成本做比較——請確保上面那一格已經填了正確的市值，不是留空或 0，否則會誤判成全部虧光。</div>
        <div class="field-row">
+         <div class="field">
+           <label>目前市值（自動抓取，供核對用）</label>
+           <input type="text" id="in-investCurrentPreview" disabled style="background:var(--paper);color:var(--ink-soft);">
+         </div>
          <div class="field">
            <label>原始投入成本（總共投入多少本金，不是市值）</label>
            <input type="number" id="in-investCostBasis" min="0" placeholder="0">
          </div>
+       </div>
+       <div class="field-row" style="margin-top:16px;">
          <div class="field">
            <label>大約已經持有這些部位幾年</label>
            <input type="number" id="in-investHoldYears" min="0" step="0.5" placeholder="0">
@@ -1193,10 +1203,20 @@ function bindPageInputs(id){
     renderSingleGroups(assetGroups, 'assetMount', 'assetTotal');
     const costEl = document.getElementById('in-investCostBasis');
     const yearsEl = document.getElementById('in-investHoldYears');
+    const previewEl = document.getElementById('in-investCurrentPreview');
     costEl.value = investCostBasis || '';
     yearsEl.value = investHoldYears || '';
     costEl.addEventListener('input', e=>{ investCostBasis = Number(e.target.value)||0; });
     yearsEl.addEventListener('input', e=>{ investHoldYears = Number(e.target.value)||0; });
+
+    function updateInvestPreview(){
+      const investGroup = assetGroups.find(g=>g.key==='invest');
+      const currentValue = investGroup ? groupAmountTotal(investGroup) : 0;
+      previewEl.value = money(currentValue) + (currentValue===0 ? '（尚未填寫，請往上填入市值）' : '');
+    }
+    updateInvestPreview();
+    // 資產表格裡任何欄位一有變動，這裡的即時預覽就跟著更新，讓客戶當下就能核對填對了沒有
+    document.getElementById('assetMount').addEventListener('input', updateInvestPreview);
   }
   if(id==='liabilities') renderSingleGroups(liabilityGroups, 'liabilityMount', 'liabilityTotal', {warm:true});
 
@@ -1333,6 +1353,18 @@ function buildInvestRealityCheckHTML(){
 
   const investGroup = assetGroups.find(g=>g.key==='invest');
   const currentValue = investGroup ? groupAmountTotal(investGroup) : 0;
+
+  // 防呆：填了成本，但「你的起點」裡股票／基金／ETF的市值卻是0，代表很可能是漏填市值，
+  // 不是真的全部虧光——這種情況不算損益，改成提醒，避免算出誤導的「-100%」。
+  if(currentValue<=0){
+    return `
+      <div class="report-section">
+        <h3>你的投資，真的如你以為的好嗎？</h3>
+        <div class="report-note">你在「你的起點」填了原始投入成本 ${money(investCostBasis)}，但「股票／基金／ETF」目前市值還是 0——請回到「你的起點」那一頁，把目前市值也填上，才能算出正確的損益對比。</div>
+      </div>
+    `;
+  }
+
   const gain = currentValue - investCostBasis;
   const gainPct = (gain/investCostBasis)*100;
   const tier = gainPct>=15 ? 'pos' : (gainPct>=0 ? 'warn' : 'neg');
@@ -1758,11 +1790,12 @@ async function tryLoadRecordFromQuery(){
   try{
     const { data: record, error } = await supabaseClient
       .from('client_records')
-      .select('state')
+      .select('state, client_name')
       .eq('id', recordId)
       .single();
     if(error || !record) return false;
     const s = record.state;
+    loadedClientName = record.client_name || '';
     Object.assign(basicA, s.basicA);
     Object.assign(backerA, s.backerA);
     Object.assign(riskA, s.riskA);
@@ -2020,6 +2053,20 @@ function formatTimestamp(d){
   return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
+/* ---------------- 報告封面 ---------------- */
+function buildReportCoverHTML(){
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const namePart = loadedClientName ? loadedClientName+' ' : '';
+  return `
+    <div class="report-section" style="text-align:center; padding:60px 20px; border-bottom:none;">
+      <div style="font-family:'Roboto Mono',monospace; font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--teal-deep); margin-bottom:28px;">JK Finance · Financial Health Check</div>
+      <h1 style="font-size:clamp(24px,3.4vw,34px); color:var(--navy); margin-bottom:18px; line-height:1.6;">${namePart}財務健檢報告書</h1>
+      <div style="font-family:'Roboto Mono',monospace; font-size:12.5px; color:var(--ink-soft);">產出日期：${dateStr}</div>
+    </div>
+  `;
+}
+
 function buildReportPages(uid, opts){
   opts = opts || {};
   const includeProfile = !!opts.includeProfile;
@@ -2045,6 +2092,7 @@ function buildReportPages(uid, opts){
   const investRealityCheckSection = buildInvestRealityCheckHTML();
 
   const pages = [];
+  pages.push(buildReportCoverHTML());
   if(includeProfile){
     pages.push(`<div class="report-section"><h3>你的財富畫像</h3><p style="color:var(--ink-soft);font-size:13.5px;line-height:1.9;">所有題目都完成了，這是根據你的回答整理出的財富現況。</p></div>` + renderSummaryProfileHTML());
     pages.push(buildFullAnswerSummaryHTML());
