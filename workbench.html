@@ -624,9 +624,23 @@
   });
   applyFontScale(localStorage.getItem(FONT_SCALE_KEY) || 'small');
 
-  // ---- 主題色系：套用到工作台自己，也注入每個同源iframe（目前全部開放，之後可依方案鎖定） ----
+  // ---- 主題色系：套用到工作台自己，也注入每個同源iframe，並依方案鎖定超出權限的選項 ----
   const THEME_KEY = 'jk_theme';
+  const TIER_RANK = { free:0, pro:1, master:2 };
+  let myPlan = 'free';
+
+  async function fetchMyPlan(){
+    try{
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if(!session) return 'free';
+      const { data } = await supabaseClient.from('profiles').select('plan').eq('id', session.user.id).single();
+      return (data && data.plan) || 'free';
+    }catch(e){ return 'free'; }
+  }
+
   function applyThemeEverywhere(themeKey){
+    const t = JK_THEMES[themeKey];
+    if(!t || TIER_RANK[t.tier] > TIER_RANK[myPlan]) return; // 超出方案權限，擋下來不套用
     jkApplyTheme(themeKey, document);
     frames.forEach(f=>{
       try{
@@ -646,16 +660,33 @@
     });
   });
   const themeGrid = document.getElementById('themeSwatchGrid');
-  themeGrid.innerHTML = Object.entries(JK_THEMES).map(([key, t])=>`
-    <div class="theme-swatch" data-theme="${key}" title="${t.label}">
-      <div class="half l" style="background:${t.navy};"></div>
-      <div class="half r" style="background:${t.teal};"></div>
-    </div>
-  `).join('');
-  themeGrid.querySelectorAll('.theme-swatch').forEach(sw=>{
-    sw.addEventListener('click', ()=> applyThemeEverywhere(sw.dataset.theme));
-  });
-  applyThemeEverywhere(localStorage.getItem(THEME_KEY) || 'free');
+
+  (async function initTheme(){
+    myPlan = await fetchMyPlan();
+    themeGrid.innerHTML = Object.entries(JK_THEMES).map(([key, t])=>{
+      const locked = TIER_RANK[t.tier] > TIER_RANK[myPlan];
+      return `
+        <div class="theme-swatch" data-theme="${key}" data-locked="${locked}" title="${locked ? t.label+'（需要'+(t.tier==='pro'?'Pro':'Master')+'方案）' : t.label}">
+          <div class="half l" style="background:${t.navy};"></div>
+          <div class="half r" style="background:${t.teal};"></div>
+          ${locked ? '<div class="theme-swatch-lock">🔒</div>' : ''}
+        </div>
+      `;
+    }).join('');
+    themeGrid.querySelectorAll('.theme-swatch').forEach(sw=>{
+      sw.addEventListener('click', ()=>{
+        if(sw.dataset.locked==='true'){
+          alert('「'+JK_THEMES[sw.dataset.theme].label+'」需要升級方案才能使用。');
+          return;
+        }
+        applyThemeEverywhere(sw.dataset.theme);
+      });
+    });
+    // 如果之前選的主題現在超出方案權限（例如被降級），退回預設主題
+    let savedTheme = localStorage.getItem(THEME_KEY) || 'free';
+    if(TIER_RANK[JK_THEMES[savedTheme]?.tier] > TIER_RANK[myPlan]) savedTheme = 'free';
+    applyThemeEverywhere(savedTheme);
+  })();
 
 
   // 只要「目前要顯示的那一頁」載入完成就先讓畫面出現，不用等其他背景模組全部載完，

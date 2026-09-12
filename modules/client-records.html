@@ -229,7 +229,21 @@
 <script src="../supabase-config.js"></script>
 <script>
 // 目前尚未區分方案，先固定為不限；之後有方案分級（例如20/100筆）時，改這裡的數字即可
-const PLAN_RECORD_LIMIT = null; // null 代表不限，或改成數字如 20、100
+// 各方案的客戶容量上限，null 代表不限
+const PLAN_LIMITS = { free: 20, pro: 100, master: null };
+let currentPlan = 'free'; // 預設先當作free，實際值會在頁面載入時去讀取覆蓋過去
+
+async function fetchCurrentPlan(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return 'free';
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('plan')
+    .eq('id', session.user.id)
+    .single();
+  if(error || !data) return 'free';
+  return data.plan || 'free';
+}
 
 const STATUS_OPTIONS = [
   {key:'', label:'未設定狀態', color:'var(--ink-soft)', bg:'rgba(91,107,112,0.08)'},
@@ -326,7 +340,9 @@ async function render(){
   const allRecords = await fetchAllRecords();
   const records = allRecords.filter(r=>!r.deletedAt);
   const trashed = allRecords.filter(r=>r.deletedAt);
-  document.getElementById('countLabel').innerHTML = '目前 <b>'+records.length+'</b> 筆 ／ 上限 '+(PLAN_RECORD_LIMIT ? PLAN_RECORD_LIMIT : '不限');
+  const limit = PLAN_LIMITS[currentPlan];
+  const limitText = limit ? limit : '不限';
+  document.getElementById('countLabel').innerHTML = '目前 <b>'+records.length+'</b> 筆 ／ 上限 '+limitText+(limit && records.length>=limit ? ' <span style="color:var(--negative);font-weight:700;">（已達上限）</span>' : '');
   document.getElementById('trashCount').textContent = trashed.length;
   const dueCount = records.filter(r=>{ const d=daysUntil(r.followUpDate); return d!==null && d<=0; }).length;
   document.getElementById('dueLabel').innerHTML = dueCount>0 ? '<span style="color:var(--negative);font-weight:700;">'+dueCount+' 筆待追蹤</span>' : '';
@@ -466,7 +482,10 @@ document.getElementById('btnToggleTrash').addEventListener('click', ()=>{
   area.style.display = area.style.display==='none' ? 'block' : 'none';
 });
 
-render();
+(async function init(){
+  currentPlan = await fetchCurrentPlan();
+  render();
+})();
 </script>
 
 </body>

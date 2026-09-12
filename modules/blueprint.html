@@ -431,7 +431,7 @@
       <div class="report-view active" id="reportClient"></div>
       <div class="report-view" id="reportAdvisor"></div>
       <div class="report-btn-row">
-        <button class="report-btn" onclick="saveClientRecord(); window.print()">📄 產出報告（列印／存成 PDF）</button>
+        <button class="report-btn" onclick="handleGenerateReport()">📄 產出報告（列印／存成 PDF）</button>
         <button class="report-btn-home" onclick="goToWorkbenchHome()">回首頁 →</button>
       </div>
     </div>
@@ -1808,6 +1808,35 @@ const LOADING_MESSAGES = ["整理基本資料中","描繪家庭關係圖","計�
 let isViewingSavedRecord = false;
 let currentSessionRecordId = null;
 
+const PLAN_LIMITS = { free: 20, pro: 100, master: null };
+
+async function checkClientLimitBeforeSave(){
+  // 已經在編輯既有紀錄，不算新增一筆，不用檢查容量
+  if(isViewingSavedRecord || currentSessionRecordId) return true;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return true;
+  const { data: profile } = await supabaseClient.from('profiles').select('plan').eq('id', session.user.id).single();
+  const plan = (profile && profile.plan) || 'free';
+  const limit = PLAN_LIMITS[plan];
+  if(!limit) return true; // 不限
+  const { count } = await supabaseClient
+    .from('client_records')
+    .select('id', { count: 'exact', head: true })
+    .eq('advisor_id', session.user.id)
+    .is('deleted_at', null);
+  return (count||0) < limit;
+}
+
+async function handleGenerateReport(){
+  const canSave = await checkClientLimitBeforeSave();
+  if(!canSave){
+    alert('這個帳號的客戶資料已達目前方案的容量上限，這筆問卷不會被存進「客戶資料」清單，但報告仍然可以正常查看與列印／存成PDF。想繼續保留更多客戶紀錄，需要升級方案。');
+  } else {
+    await saveClientRecord();
+  }
+  window.print();
+}
+
 async function saveClientRecord(){
   if(isViewingSavedRecord) return;
   try{
@@ -2207,7 +2236,7 @@ function renderReport(){
     advisorPages.map(html=>`<div class="report-page">${html}</div>`).join('');
   fillCashflowBreakdown('a'); fillBalanceBreakdown('a');
 
-  saveClientRecord();
+  checkClientLimitBeforeSave().then(canSave=>{ if(canSave) saveClientRecord(); });
 }
 
 document.querySelectorAll('.report-toggle button').forEach(btn=>{
