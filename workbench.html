@@ -58,11 +58,11 @@
 
   .pin-toggle-btn{
     position:absolute; top:16px; right:12px;
-    background:rgba(255,255,255,0.08); border:none; color:rgba(245,247,246,0.6);
-    width:24px; height:24px; border-radius:6px; cursor:pointer; font-size:10px;
+    background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.25); color:#fff;
+    width:26px; height:26px; border-radius:6px; cursor:pointer; font-size:11px;
     display:flex; align-items:center; justify-content:center;
   }
-  .pin-toggle-btn:hover{background:rgba(255,255,255,0.16); color:#fff;}
+  .pin-toggle-btn:hover{background:rgba(255,255,255,0.24); border-color:rgba(255,255,255,0.4);}
 
   /* ---------- 收合狀態：只留圖示，畫面空間讓給主內容 ---------- */
   .collapsed-icon{display:none;}
@@ -73,9 +73,8 @@
   aside.sidebar.pinned-collapsed .who{display:none;}
   aside.sidebar.pinned-collapsed .pin-toggle-btn{position:static;}
 
-  aside.sidebar.pinned-collapsed .nav-group-header{justify-content:center; padding:10px 4px;}
-  aside.sidebar.pinned-collapsed .nav-group-header span:first-child,
-  aside.sidebar.pinned-collapsed .chevron{display:none;}
+  aside.sidebar.pinned-collapsed .nav-group-header{display:none;}
+  aside.sidebar.pinned-collapsed .nav-group-body{max-height:none !important; display:block !important;}
 
   aside.sidebar.pinned-collapsed .mod-btn{padding:11px 0; text-align:center;}
   aside.sidebar.pinned-collapsed .mod-btn .name,
