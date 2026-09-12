@@ -227,6 +227,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-config.js"></script>
+<script src="../plan-utils.js"></script>
 <script>
 // 目前尚未區分方案，先固定為不限；之後有方案分級（例如20/100筆）時，改這裡的數字即可
 // 各方案的客戶容量上限，null 代表不限
@@ -234,15 +235,8 @@ const PLAN_LIMITS = { free: 20, pro: 100, master: null };
 let currentPlan = 'free'; // 預設先當作free，實際值會在頁面載入時去讀取覆蓋過去
 
 async function fetchCurrentPlan(){
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if(!session) return 'free';
-  const { data, error } = await supabaseClient
-    .from('profiles')
-    .select('plan')
-    .eq('id', session.user.id)
-    .single();
-  if(error || !data) return 'free';
-  return data.plan || 'free';
+  const result = await fetchEffectivePlan();
+  return result.plan;
 }
 
 const STATUS_OPTIONS = [

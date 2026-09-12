@@ -204,6 +204,23 @@
   .stat-grid.two{grid-template-columns:repeat(2,1fr);}
   @media (max-width:900px){.stat-grid{grid-template-columns:1fr 1fr;}}
   @media (max-width:520px){.stat-grid{grid-template-columns:1fr;}}
+
+  .rt-grid-2col{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;}
+  @media (max-width:520px){.rt-grid-2col{grid-template-columns:1fr;}}
+
+  /* 退休試算專用：把原本橫幅樣式的狀態卡片，濃縮成跟其他stat-card一樣的尺寸 */
+  .status-banner-compact{
+    display:block !important; padding:18px 16px !important; border-width:1px !important;
+    box-shadow:0 6px 18px rgba(20,50,60,0.05) !important; margin-bottom:0 !important;
+  }
+  .status-banner-compact .status-badge{margin-bottom:8px; font-size:11px; padding:4px 10px;}
+  .status-banner-compact .status-diff{font-size:20px; line-height:1.2;}
+  .status-banner-compact.tier-warn-banner{border-color:rgba(184,121,30,.3) !important; background:rgba(184,121,30,.06);}
+  .status-banner-compact.tier-warn-banner .status-badge{background:rgba(184,121,30,.12); color:#B8791E;}
+  .status-banner-compact.tier-warn-banner .status-diff{color:#B8791E;}
+  .status-banner-compact.tier-neg-banner{border-color:rgba(179,73,47,.3) !important; background:rgba(179,73,47,.06);}
+  .status-banner-compact.tier-neg-banner .status-badge{background:rgba(179,73,47,.12); color:var(--negative);}
+  .status-banner-compact.tier-neg-banner .status-diff{color:var(--negative);}
   .stat-card{background:var(--card); border-radius:12px; border:1px solid var(--line); padding:18px 16px; box-shadow:0 6px 18px rgba(20,50,60,0.05);}
   .stat-card.good{background:rgba(46,125,91,.06); border-color:rgba(46,125,91,.25);}
   .stat-card.warm{background:var(--warm-tint); border-color:rgba(168,95,39,.2);}
@@ -523,58 +540,49 @@
     <button class="calc-btn" id="btn-calcRetirement">計算退休基金</button>
 
     <div class="result-section" id="rt-resultSection">
-      <div class="status-banner" id="rt-statusBanner">
-        <div>
-          <div class="status-badge" id="rt-statusBadge">✓ 退休金充足</div>
-          <div class="status-diff-label" id="rt-diffLabel">超出目標</div>
-          <div class="status-diff" id="rt-diffValue">$0</div>
-          <p class="status-desc" id="rt-statusDesc"></p>
-        </div>
-        <div class="status-rate-box">
-          <div class="rate-label">目標達成率</div>
-          <div class="rate-big" id="rt-rateBig">0<small>%</small></div>
-          <div class="achieve-bar"><div class="achieve-fill" id="rt-rateBar"></div></div>
-          <div class="rate-sub" id="rt-rateSub">已達成 0%</div>
-        </div>
-      </div>
 
-      <div class="stat-grid">
+      <!-- 左欄：1所需資產 → 2實際累積資產 → 3缺口或充足（濃縮成跟其他卡片同尺寸）
+           右欄：4目標月現金流 → 5預估退休收入 → 6通膨影響 -->
+      <div class="rt-grid-2col">
         <div class="stat-card" id="rt-card-required">
           <div class="stat-label">所需準備總額</div>
           <div class="stat-value" id="rt-required">$0</div>
           <div class="stat-note">被動收入達標所需</div>
-        </div>
-        <div class="stat-card" id="rt-card-projected">
-          <div class="stat-label">退休時可用資產</div>
-          <div class="stat-value" id="rt-projected">$0</div>
-          <div class="stat-note">依目前儲蓄推算</div>
         </div>
         <div class="stat-card" id="rt-card-desired">
           <div class="stat-label">理想退休月生活費</div>
           <div class="stat-value" id="rt-desiredMonthly">$0<small>/月</small></div>
           <div class="stat-note">以今日購買力計算</div>
         </div>
+
+        <div class="stat-card" id="rt-card-projected">
+          <div class="stat-label">退休時可用資產</div>
+          <div class="stat-value" id="rt-projected">$0</div>
+          <div class="stat-note">依目前儲蓄推算</div>
+        </div>
         <div class="stat-card" id="rt-card-total">
           <div class="stat-label">預估退休月收入（含勞保勞退）</div>
           <div class="stat-value" id="rt-totalMonthly">$0<small>/月</small></div>
           <div class="stat-note" id="rt-totalMonthlyNote">投資被動收入 ＋ 勞保勞退</div>
         </div>
-      </div>
 
-      <div class="inflation-bar">
-        <span class="lbl">通膨影響</span>
-        <span>今日 <b id="rt-infToday">$0</b></span>
-        <span class="arrow">→</span>
-        <span id="rt-infYears">0 年 × 0% 通膨</span>
-        <span class="arrow">→</span>
-        <span class="warm-text" id="rt-infFuture">$0</span>
-      </div>
-
-      <div class="stat-grid two">
-        <div class="stat-card">
-          <div class="stat-label">月被動收入（投資部分）</div>
-          <div class="stat-value" id="rt-investMonthly">$0<small>/月</small></div>
+        <div class="stat-card status-banner-compact" id="rt-statusBanner">
+          <div class="status-badge" id="rt-statusBadge">✓ 退休金充足</div>
+          <div class="status-diff" id="rt-diffValue">$0</div>
+          <div class="stat-note"><span id="rt-diffLabel">超出目標</span> · 達成率 <span id="rt-rateBig">0<small>%</small></span></div>
+          <p class="status-desc" id="rt-statusDesc" style="display:none;"></p>
+          <div class="achieve-bar" style="display:none;"><div class="achieve-fill" id="rt-rateBar"></div></div>
+          <div class="rate-sub" id="rt-rateSub" style="display:none;"></div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">通膨影響購買力</div>
+          <div class="stat-value" id="rt-infFuture">$0</div>
+          <div class="stat-note">今日 <span id="rt-infToday">$0</span> · <span id="rt-infYears">0年×0%</span></div>
+        </div>
+      </div>
+
+      <!-- 下方橫跨兩欄：實質報酬率 -->
+      <div class="stat-grid two">
         <div class="stat-card">
           <div class="stat-label">實質報酬率</div>
           <div class="stat-value" id="rt-realReturn">0%</div>
@@ -674,27 +682,21 @@
       <button class="calc-btn" id="btn-calcHouse">計算購屋基金</button>
 
       <div class="result-section" id="ha-resultSection">
-        <div class="status-banner" id="ha-statusBanner">
-          <div>
+        <div class="rt-grid-2col">
+          <div class="stat-card status-banner-compact" id="ha-statusBanner">
             <div class="status-badge" id="ha-statusBadge">✓ 計畫可行</div>
-            <div class="status-diff-label">每月需存</div>
-            <div class="status-diff" id="ha-monthlyNeed">$0<small style="font-size:16px;font-weight:600;">/月</small></div>
-            <p class="status-desc" id="ha-statusDesc"></p>
+            <div class="status-diff" id="ha-monthlyNeed">$0<small style="font-size:12px;font-weight:600;">/月</small></div>
+            <div class="stat-note">每月需存 · 自備款達成率 <span id="ha-rateBig">0<small>%</small></span></div>
+            <p class="status-desc" id="ha-statusDesc" style="display:none;"></p>
+            <div class="achieve-bar" style="display:none;"><div class="achieve-fill" id="ha-rateBar"></div></div>
+            <div class="rate-sub" id="ha-rateSub" style="display:none;"></div>
           </div>
-          <div class="status-rate-box">
-            <div class="rate-label">自備款達成率</div>
-            <div class="rate-big" id="ha-rateBig">0<small>%</small></div>
-            <div class="achieve-bar"><div class="achieve-fill" id="ha-rateBar"></div></div>
-            <div class="rate-sub" id="ha-rateSub">頭期款 $0</div>
-          </div>
-        </div>
-
-        <div class="stat-grid">
           <div class="stat-card" id="ha-card-down">
             <div class="stat-label">頭期款目標</div>
             <div class="stat-value" id="ha-downPayment">$0</div>
             <div class="stat-note" id="ha-downNote">房價 20%</div>
           </div>
+
           <div class="stat-card" id="ha-card-loan">
             <div class="stat-label">貸款金額</div>
             <div class="stat-value" id="ha-loanAmount">$0</div>
@@ -705,6 +707,7 @@
             <div class="stat-value" id="ha-normalMonthly">$0<small>/月</small></div>
             <div class="stat-note">本息攤還</div>
           </div>
+
           <div class="stat-card" id="ha-card-interest">
             <div class="stat-label">總利息成本</div>
             <div class="stat-value" id="ha-totalInterest">$0</div>
@@ -880,27 +883,21 @@
     <button class="calc-btn" id="btn-calcEducation">計算教育基金</button>
 
     <div class="result-section" id="edu-resultSection">
-      <div class="status-banner" id="edu-statusBanner">
-        <div>
+      <div class="rt-grid-2col">
+        <div class="stat-card status-banner-compact" id="edu-statusBanner">
           <div class="status-badge" id="edu-statusBadge">✓ 計畫可行</div>
-          <div class="status-diff-label">每月需存</div>
-          <div class="status-diff" id="edu-monthlyNeed">$0<small style="font-size:16px;font-weight:600;">/月</small></div>
-          <p class="status-desc" id="edu-statusDesc"></p>
+          <div class="status-diff" id="edu-monthlyNeed">$0<small style="font-size:12px;font-weight:600;">/月</small></div>
+          <div class="stat-note">每月需存 · 複利貢獻比例 <span id="edu-compoundRate">0<small>%</small></span></div>
+          <p class="status-desc" id="edu-statusDesc" style="display:none;"></p>
+          <div class="achieve-bar" style="display:none;"><div class="achieve-fill" id="edu-compoundBar"></div></div>
+          <div class="rate-sub" id="edu-compoundSub" style="display:none;"></div>
         </div>
-        <div class="status-rate-box">
-          <div class="rate-label">複利貢獻比例</div>
-          <div class="rate-big" id="edu-compoundRate">0<small>%</small></div>
-          <div class="achieve-bar"><div class="achieve-fill" id="edu-compoundBar"></div></div>
-          <div class="rate-sub" id="edu-compoundSub">時間複利幫你賺 $0</div>
-        </div>
-      </div>
-
-      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
         <div class="stat-card" id="edu-card-target">
           <div class="stat-label">教育金目標（通膨後）</div>
           <div class="stat-value" id="edu-targetInflated">$0</div>
           <div class="stat-note" id="edu-targetNote">今日 $0 → 通膨 0% × 0 年</div>
         </div>
+
         <div class="stat-card" id="edu-card-contribution">
           <div class="stat-label">您的總投入</div>
           <div class="stat-value" id="edu-totalContribution">$0</div>
@@ -1304,41 +1301,41 @@
     <button class="calc-btn" id="btn-calcInvest">計算投資理財</button>
 
     <div class="result-section" id="inv-resultSection">
-      <div class="status-banner" id="inv-statusBanner">
-        <div>
-          <div class="status-badge" id="inv-statusBadge">✓ 目標可望達成</div>
-          <div class="status-diff-label">預估最終資產</div>
-          <div class="status-diff" id="inv-finalValue">$0</div>
-          <p class="status-desc" id="inv-statusDesc"></p>
-        </div>
-        <div class="status-rate-box">
-          <div class="rate-label">目標達成率</div>
-          <div class="rate-big" id="inv-rateBig">0<small>%</small></div>
-          <div class="achieve-bar"><div class="achieve-fill" id="inv-rateBar"></div></div>
-          <div class="rate-sub" id="inv-rateSub">目標 $0</div>
-        </div>
-      </div>
-
-      <div class="stat-grid">
+      <div class="rt-grid-2col">
         <div class="stat-card" id="inv-card-target">
           <div class="stat-label">目標金額</div>
           <div class="stat-value" id="inv-targetDisplay">$0</div>
           <div class="stat-note" id="inv-targetNote">投資 0 年後</div>
-        </div>
-        <div class="stat-card" id="inv-card-final">
-          <div class="stat-label">預估累積資產</div>
-          <div class="stat-value" id="inv-finalDisplay">$0</div>
-          <div class="stat-note">依目前假設推算</div>
         </div>
         <div class="stat-card" id="inv-card-contribution">
           <div class="stat-label">總投入本金</div>
           <div class="stat-value" id="inv-totalContribution">$0</div>
           <div class="stat-note" id="inv-contributionNote">本金＋每月投入累計</div>
         </div>
+
+        <div class="stat-card" id="inv-card-final">
+          <div class="stat-label">預估累積資產</div>
+          <div class="stat-value" id="inv-finalDisplay">$0</div>
+          <div class="stat-note">依目前假設推算</div>
+        </div>
         <div class="stat-card" id="inv-card-gain">
           <div class="stat-label">投資收益（複利貢獻）</div>
           <div class="stat-value" id="inv-gain">$0</div>
           <div class="stat-note" id="inv-gainNote">複利貢獻 0%</div>
+        </div>
+
+        <div class="stat-card status-banner-compact" id="inv-statusBanner">
+          <div class="status-badge" id="inv-statusBadge">✓ 目標可望達成</div>
+          <div class="status-diff" id="inv-finalValue">$0</div>
+          <div class="stat-note"><span id="inv-diffLabelText">預估最終資產</span> · 達成率 <span id="inv-rateBig">0<small>%</small></span></div>
+          <p class="status-desc" id="inv-statusDesc" style="display:none;"></p>
+          <div class="achieve-bar" style="display:none;"><div class="achieve-fill" id="inv-rateBar"></div></div>
+          <div class="rate-sub" id="inv-rateSub" style="display:none;"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">通膨影響購買力</div>
+          <div class="stat-value" id="inv-infReal">$0</div>
+          <div class="stat-note">名目累積 <span id="inv-infNominal">$0</span> · <span id="inv-infYears">0年×0%</span></div>
         </div>
       </div>
 
@@ -1354,15 +1351,6 @@
             <span><i class="dot gain"></i>複利收益 <b id="inv-legendGain">$0</b>（<span id="inv-legendGainPct">0%</span>）</span>
           </div>
         </div>
-      </div>
-
-      <div class="inflation-bar">
-        <span class="lbl">通膨影響</span>
-        <span>名目累積 <b id="inv-infNominal">$0</b></span>
-        <span class="arrow">→</span>
-        <span id="inv-infYears">0 年 × 0% 通膨</span>
-        <span class="arrow">→</span>
-        <span class="warm-text">實質購買力約 <b id="inv-infReal">$0</b></span>
       </div>
 
       <div class="tips-box">
@@ -1553,7 +1541,7 @@ function calcRetirement(){
 
   // ---- 寫入畫面 ----
   const banner = document.getElementById('rt-statusBanner');
-  banner.className = 'status-banner' + (bannerClass ? ' '+bannerClass : '');
+  banner.className = 'stat-card status-banner-compact' + (bannerClass ? ' '+bannerClass : '');
 
   const badgeText = tier==='pos' ? '✓ 退休金充足' : (tier==='warn' ? '⚠ 退休金有落差' : '✕ 實質資產恐虧損');
   document.getElementById('rt-statusBadge').textContent = badgeText;
@@ -1608,9 +1596,6 @@ function calcRetirement(){
   document.getElementById('rt-infYears').textContent = `${years} 年 × ${(inflation*100).toFixed(1)}% 通膨`;
   document.getElementById('rt-infFuture').textContent = money(futureNominal);
 
-  const investMonthlyEl = document.getElementById('rt-investMonthly');
-  investMonthlyEl.innerHTML = money(investMonthly)+'<small>/月</small>';
-  investMonthlyEl.className = 'stat-value ' + (investMonthly>=0 ? 'tier-pos' : 'tier-neg');
   const realReturnEl = document.getElementById('rt-realReturn');
   realReturnEl.textContent = (realReturn*100).toFixed(2)+'%';
   realReturnEl.className = 'stat-value ' + (realReturn>0 ? 'tier-pos' : (realReturn>=0 ? 'tier-warn' : 'tier-neg'));
@@ -1681,7 +1666,7 @@ function calcInvest(){
   const tier = achievementRate>=100 ? 'pos' : (achievementRate>=60 ? 'warn' : 'neg');
 
   const banner = document.getElementById('inv-statusBanner');
-  banner.className = 'status-banner' + (tier==='pos' ? '' : (tier==='warn' ? ' tier-warn-banner' : ' tier-neg-banner'));
+  banner.className = 'stat-card status-banner-compact' + (tier==='pos' ? '' : (tier==='warn' ? ' tier-warn-banner' : ' tier-neg-banner'));
   document.getElementById('inv-statusBadge').textContent = tier==='pos' ? '✓ 目標可望達成' : (tier==='warn' ? '⚠ 距離目標尚有落差' : '✕ 落差較大，建議調整假設');
 
   const finalValueEl = document.getElementById('inv-finalValue');
@@ -2301,7 +2286,7 @@ function calcEducation(){
   const tier = compoundRate>=25 ? 'pos' : (compoundRate>=10 ? 'warn' : 'neg');
 
   const banner = document.getElementById('edu-statusBanner');
-  banner.className = 'status-banner' + (tier==='pos' ? '' : (tier==='warn' ? ' tier-warn-banner' : ' tier-neg-banner'));
+  banner.className = 'stat-card status-banner-compact' + (tier==='pos' ? '' : (tier==='warn' ? ' tier-warn-banner' : ' tier-neg-banner'));
   document.getElementById('edu-statusBadge').textContent = tier==='pos' ? '✓ 計畫可行，時間複利幫上大忙' : (tier==='warn' ? '⚠ 計畫可行，但複利幫助有限' : '✕ 準備期太短，幾乎得靠本金硬存');
 
   const monthlyNeedEl = document.getElementById('edu-monthlyNeed');
@@ -2423,7 +2408,7 @@ function calcHouseAbility(){
 
   // ---- 狀態橫幅 ----
   const banner = document.getElementById('ha-statusBanner');
-  banner.className = 'status-banner' + (tier==='pos' ? '' : (tier==='warn' ? ' tier-warn-banner' : ' tier-neg-banner'));
+  banner.className = 'stat-card status-banner-compact' + (tier==='pos' ? '' : (tier==='warn' ? ' tier-warn-banner' : ' tier-neg-banner'));
   document.getElementById('ha-statusBadge').textContent = tier==='pos' ? '✓ 計畫可行' : (tier==='warn' ? '⚠ 需要調整計畫' : '✕ 頭期款壓力大');
 
   const monthlyNeedEl = document.getElementById('ha-monthlyNeed');

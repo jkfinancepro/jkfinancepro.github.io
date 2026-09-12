@@ -178,7 +178,6 @@
   .loading-bar-fill{height:100%;background:linear-gradient(90deg,#8FC4D8,var(--warm));border-radius:7px;width:0%;transition:width .18s linear;}
   .loading-pct{text-align:center;margin-top:12px;font-family:"Roboto Mono",monospace;font-size:22px;font-weight:700;letter-spacing:.05em;}
   .loading-sub{text-align:center;margin-top:22px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.8;}
-  .loading-cycle{text-align:center;margin-top:6px;font-size:13px;color:var(--teal-light-text);font-family:"Roboto Mono",monospace;min-height:20px;}
 
   .report-toggle{display:flex;gap:8px;margin-bottom:24px;justify-content:center;}
   .report-toggle button{padding:10px 22px;border-radius:24px;border:1.5px solid var(--line);background:#fff;font-size:13.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;}
@@ -409,7 +408,6 @@
     <div class="loading-bar"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
     <div class="loading-pct" id="loadingPct">0%</div>
     <div class="loading-sub">評估計算中，等待時間約30-60秒，請稍後</div>
-    <div class="loading-cycle" id="loadingCycle">評估人生階段.......</div>
   </div>
 </div>
 
@@ -441,6 +439,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-config.js"></script>
 <script src="../theme-config.js"></script>
+<script src="../plan-utils.js"></script>
 <script>
 jkApplySavedTheme();
 
@@ -761,9 +760,17 @@ function monthOptions(){
   for(let m=1;m<=12;m++){ opts += `<option value="${m}">${m}</option>`; }
   return opts;
 }
-function dayOptions(){
+function daysInMonth(year, month){
+  if(!month) return 31; // 還沒選月份時，先給最大範圍，避免卡住
+  const y = year || new Date().getFullYear(); // 還沒選年份時，先用今年判斷（主要影響2月是否閏年）
+  return new Date(Number(y), Number(month), 0).getDate();
+}
+function dayOptions(year, month, selectedDay){
+  const maxDay = daysInMonth(year, month);
   let opts = '<option value="">日</option>';
-  for(let d=1;d<=31;d++){ opts += `<option value="${d}">${d}</option>`; }
+  for(let d=1; d<=maxDay; d++){
+    opts += `<option value="${d}"${Number(selectedDay)===d?' selected':''}>${d}</option>`;
+  }
   return opts;
 }
 
@@ -780,37 +787,32 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"dob", stage:"你的輪廓", icon:"👤", n:2,
-   title:"出生年月日", sub:"這會用來估算你的年齡跟目標年數。",
+  {id:"profileDetails", stage:"你的輪廓", icon:"👤", n:2,
+   title:"基本資料", sub:"出生年月日會用來估算你的年齡跟目標年數。",
    render: ()=>`
      <div class="field">
+       <label>出生年月日</label>
        <div class="dob-row">
          <select data-bind="dobY">${yearOptions()}</select>
          <select data-bind="dobM">${monthOptions()}</select>
-         <select data-bind="dobD">${dayOptions()}</select>
+         <select data-bind="dobD" id="dobDSelect">${dayOptions(basicA.dobY, basicA.dobM, basicA.dobD)}</select>
        </div>
        <div class="hint" id="dobAgeHint">${basicA.dobY ? "今年 "+getCurrentAge()+" 歲" : ""}</div>
      </div>
-   `},
-  {id:"gender", stage:"你的輪廓", icon:"👤", n:3,
-   title:"性別", sub:"",
-   render: ()=>`
-     <div class="field">
+     <div class="field" style="margin-top:26px;">
+       <label>性別</label>
        <div class="choice-group" data-mode="single" data-bind="gender">
          <div class="choice-pill">男</div><div class="choice-pill">女</div><div class="choice-pill">其他</div>
        </div>
      </div>
-   `},
-  {id:"location", stage:"你的輪廓", icon:"👤", n:4,
-   title:"居住地", sub:"",
-   render: ()=>`
-     <div class="field">
+     <div class="field" style="margin-top:26px;">
+       <label>居住地</label>
        <div class="choice-group" data-mode="single" data-bind="location">
          <div class="choice-pill">台灣</div><div class="choice-pill">其他</div>
        </div>
      </div>
    `},
-  {id:"job", stage:"你的輪廓", icon:"👤", n:5,
+  {id:"job", stage:"你的輪廓", icon:"👤", n:3,
    title:"職業", sub:"選最接近的類別就好。",
    render: ()=>`
      <div class="field">
@@ -824,29 +826,27 @@ const PAGES = [
      </div>
    `},
 
-  {id:"marital", stage:"你的後盾", icon:"🏠", n:6,
-   title:"婚姻狀況", sub:"",
+  {id:"maritalChildren", stage:"你的後盾", icon:"🏠", n:4,
+   title:"婚姻與子女", sub:"",
    render: ()=>`
      <div class="field">
+       <label>婚姻狀況</label>
        <div class="choice-group" data-mode="single" data-bind="marital">
          <div class="choice-pill">未婚</div><div class="choice-pill">已婚</div><div class="choice-pill">離異</div><div class="choice-pill">喪偶</div>
        </div>
      </div>
-   `},
-  {id:"children", stage:"你的後盾", icon:"🏠", n:7,
-   title:"有沒有子女？", sub:"",
-   render: ()=>`
-     <div class="field">
+     <div class="field" style="margin-top:26px;">
+       <label>有沒有子女？</label>
        <div class="choice-group" data-mode="single" data-bind="hasChildren">
          <div class="choice-pill">有</div><div class="choice-pill">無</div>
        </div>
      </div>
-     <div id="childrenListWrap" style="display:${backerA.hasChildren==="有"?"block":"none"};">
+     <div id="childrenListWrap" style="display:${backerA.hasChildren==="有"?"block":"none"};margin-top:16px;">
        <div id="childrenList"></div>
        <button class="add-member-btn" id="addChildBtn" type="button">＋ 新增子女</button>
      </div>
    `},
-  {id:"supportParents", stage:"你的後盾", icon:"🏠", n:8,
+  {id:"supportParents", stage:"你的後盾", icon:"🏠", n:5,
    title:"需要撫養父母嗎？", sub:"",
    render: ()=>`
      <div class="field">
@@ -856,20 +856,20 @@ const PAGES = [
      </div>
    `},
 
-  {id:"income", stage:"錢都去哪了", icon:"💧", n:9,
+  {id:"income", stage:"錢都去哪了", icon:"💧", n:6,
    title:"你的收入", sub:"不用精確到每一塊錢，抓大概的數字就好。",
    render: ()=>`
      <div id="incomeMount"></div>
      <div class="group-total-row"><span class="k">年收入合計</span><span class="v" id="incomeTotal">$0</span></div>
    `},
-  {id:"expense", stage:"錢都去哪了", icon:"💧", n:10,
+  {id:"expense", stage:"錢都去哪了", icon:"💧", n:7,
    title:"你的支出", sub:"",
    render: ()=>`
      <div id="expenseMount"></div>
      <div class="group-total-row warm"><span class="k">年支出合計</span><span class="v" id="expenseTotal">$0</span></div>
    `},
 
-  {id:"assets", stage:"你的起點", icon:"⚖️", n:11,
+  {id:"assets", stage:"你的起點", icon:"⚖️", n:8,
    title:"你擁有的資產", sub:"以目前的估計市值填寫。",
    render: ()=>`
      <div id="assetMount"></div>
@@ -897,14 +897,14 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"liabilities", stage:"你的起點", icon:"⚖️", n:12,
+  {id:"liabilities", stage:"你的起點", icon:"⚖️", n:9,
    title:"你目前的負債", sub:"",
    render: ()=>`
      <div id="liabilityMount"></div>
      <div class="group-total-row warm"><span class="k">負債合計</span><span class="v" id="liabilityTotal">$0</span></div>
    `},
 
-  {id:"risk", stage:"財務個性", icon:"🎯", n:13,
+  {id:"risk", stage:"財務個性", icon:"🎯", n:10,
    title:"關於金錢，你的真實感受？", sub:"1 = 非常不像我　　5 = 非常像我。沒有標準答案，憑直覺回答就好。",
    render: ()=>`
      ${RISK_QUESTIONS.map((q,i)=>`
@@ -916,7 +916,7 @@ const PAGES = [
        </div>
      `).join('')}
    `},
-  {id:"decisionStyle", stage:"財務個性", icon:"🎯", n:14,
+  {id:"decisionStyle", stage:"財務個性", icon:"🎯", n:11,
    title:"平時怎麼做財務決定的？", sub:"依你最常用的方式，依序點選（第一次點＝最常用）。",
    render: ()=>`
      <div class="field">
@@ -925,7 +925,7 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"moneyMeaning", stage:"財務個性", icon:"🎯", n:15,
+  {id:"moneyMeaning", stage:"財務個性", icon:"🎯", n:12,
    title:"對你來說，錢最重要的意義是？", sub:"憑直覺依序點選，最重要的先點。",
    render: ()=>`
      <div class="field">
@@ -934,7 +934,7 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"lifeEvents", stage:"財務個性", icon:"🎯", n:16,
+  {id:"lifeEvents", stage:"財務個性", icon:"🎯", n:13,
    title:"最近一年，是否經歷這些事？", sub:"可複選。",
    render: ()=>`
      <div class="field">
@@ -945,7 +945,7 @@ const PAGES = [
      </div>
    `},
 
-  {id:"vision", stage:"財富願景", icon:"🧭", n:17,
+  {id:"vision", stage:"財富願景", icon:"🧭", n:14,
    title:"你想抵達的地方", sub:"選出你最想達成的財務目標，選了下方會出現輸入欄位。",
    render: ()=>`
      <div class="field">
@@ -960,7 +960,7 @@ const PAGES = [
      <div id="goalCalcMount"></div>
    `},
 
-  {id:"summary", isSummary:true, stage:"總覽", icon:"✅", n:18,
+  {id:"summary", isSummary:true, stage:"總覽", icon:"✅", n:15,
    title:"填寫完成，來看一下總覽", sub:"確認沒問題後，就可以生成完整報告書。",
    render: ()=>renderSummaryHTML()}
 ];
@@ -1190,8 +1190,8 @@ function renderChildRow(child){
 function bindPageInputs(id){
   document.querySelectorAll('#stageBody .choice-group[data-bind]').forEach(el=>{
     const key = el.dataset.bind;
-    const stateObj = id==='lifeStage'||id==='dob'||id==='gender'||id==='location'||id==='job' ? basicA
-      : id==='marital'||id==='children'||id==='supportParents' ? backerA
+    const stateObj = id==='lifeStage'||id==='profileDetails'||id==='job' ? basicA
+      : id==='maritalChildren'||id==='supportParents' ? backerA
       : id==='vision' ? visionA : basicA;
     bindChoiceGroup(el, stateObj, key);
   });
@@ -1201,6 +1201,16 @@ function bindPageInputs(id){
     sel.value = basicA[key] || "";
     sel.addEventListener('change', e=>{
       basicA[key] = e.target.value;
+      // 年或月改變時，重新計算天數選項（例如2月只有28或29天），
+      // 如果原本選的日期超出新的範圍，就清空日期讓使用者重選，避免留著一個不合法的日期
+      if(key === 'dobY' || key === 'dobM'){
+        const dSelect = document.getElementById('dobDSelect');
+        if(dSelect){
+          const maxDay = daysInMonth(basicA.dobY, basicA.dobM);
+          if(basicA.dobD && Number(basicA.dobD) > maxDay) basicA.dobD = '';
+          dSelect.innerHTML = dayOptions(basicA.dobY, basicA.dobM, basicA.dobD);
+        }
+      }
       const hintEl = document.getElementById('dobAgeHint');
       if(hintEl) hintEl.textContent = basicA.dobY ? "今年 "+getCurrentAge()+" 歲" : "";
     });
@@ -1249,7 +1259,7 @@ function bindPageInputs(id){
     });
   }
 
-  if(id==='children'){
+  if(id==='maritalChildren'){
     document.getElementById('childrenList').innerHTML = '';
     backerA.children.forEach(renderChildRow);
     document.getElementById('addChildBtn').addEventListener('click', addChild);
@@ -1815,9 +1825,8 @@ async function checkClientLimitBeforeSave(){
   if(isViewingSavedRecord || currentSessionRecordId) return true;
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session) return true;
-  const { data: profile } = await supabaseClient.from('profiles').select('plan').eq('id', session.user.id).single();
-  const plan = (profile && profile.plan) || 'free';
-  const limit = PLAN_LIMITS[plan];
+  const effective = await fetchEffectivePlan();
+  const limit = PLAN_LIMITS[effective.plan];
   if(!limit) return true; // 不限
   const { count } = await supabaseClient
     .from('client_records')
@@ -1902,25 +1911,15 @@ async function tryLoadRecordFromQuery(){
   }catch(e){ console.error('讀取客戶紀錄失敗', e); return false; }
 }
 
-const CYCLE_MESSAGES = ["評估人生階段.......","計算收支流量.......","計算資產負債.......","評估財務個性......."];
-
 function runLoadingThenReport(){
   showScreen('screen-loading');
   document.getElementById('screen-loading').classList.add('active');
   const fill = document.getElementById('loadingBarFill');
   const pct = document.getElementById('loadingPct');
   const msg = document.getElementById('loadingMsg');
-  const cycleEl = document.getElementById('loadingCycle');
   const TOTAL_MS = 20000; // 故意拉長到20秒，讓使用者感受到「有在認真計算」
   const startTime = Date.now();
   msg.textContent = LOADING_MESSAGES[0];
-
-  let cycleIdx = 0;
-  cycleEl.textContent = CYCLE_MESSAGES[0];
-  const cycleTimer = setInterval(()=>{
-    cycleIdx = (cycleIdx+1) % CYCLE_MESSAGES.length;
-    cycleEl.textContent = CYCLE_MESSAGES[cycleIdx];
-  }, 5000);
 
   const timer = setInterval(()=>{
     const elapsed = Date.now() - startTime;
@@ -1928,7 +1927,6 @@ function runLoadingThenReport(){
     if(p >= 100){
       p = 100;
       clearInterval(timer);
-      clearInterval(cycleTimer);
       setTimeout(()=>{
         document.getElementById('screen-loading').classList.remove('active');
         renderReport();
