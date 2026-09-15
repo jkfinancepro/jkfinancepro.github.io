@@ -1944,6 +1944,7 @@ async function tryLoadRecordFromQuery(){
         .from('client_reports')
         .select('state')
         .eq('client_id', trackClientId)
+        .is('deleted_at', null)
         .order('saved_at', { ascending:false })
         .limit(1)
         .single();

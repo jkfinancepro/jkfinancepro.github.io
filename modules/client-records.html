@@ -164,8 +164,30 @@
   }
   .report-history-row:not(:last-child){border-bottom:1px dashed var(--line);}
   .report-history-row .rh-date{font-family:"Roboto Mono",monospace; color:var(--ink);}
+  .report-history-row .rh-actions{display:flex; align-items:center; gap:10px;}
   .report-history-row a{color:var(--teal-deep); font-weight:700; text-decoration:none; font-size:11.5px;}
   .report-history-row a:hover{text-decoration:underline;}
+  .btn-history-delete{
+    appearance:none; border:none; background:none; color:var(--ink-soft);
+    font-size:13px; cursor:pointer; padding:2px 4px; line-height:1; border-radius:4px;
+  }
+  .btn-history-delete:hover{color:var(--negative); background:rgba(179,73,47,0.08);}
+  .report-history-trash{
+    margin-top:10px; padding-top:10px; border-top:1px solid var(--line);
+  }
+  .report-history-trash-label{font-size:10.5px; color:var(--ink-soft); font-weight:700; margin-bottom:4px;}
+  .report-history-row.deleted{color:rgba(91,107,112,0.6);}
+  .report-history-row.deleted .rh-date{color:rgba(91,107,112,0.6);}
+  .btn-history-restore{
+    appearance:none; border:none; background:none; color:var(--teal-deep);
+    font-size:11.5px; font-weight:700; cursor:pointer; padding:2px 4px;
+  }
+  .btn-history-restore:hover{text-decoration:underline;}
+  .btn-history-purge{
+    appearance:none; border:none; background:none; color:var(--negative);
+    font-size:11.5px; font-weight:700; cursor:pointer; padding:2px 4px;
+  }
+  .btn-history-purge:hover{text-decoration:underline;}
 
   .compare-panel{
     margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
@@ -335,7 +357,7 @@ async function fetchAllRecords(){
 
   const { data: reports, error: reportsError } = await supabaseClient
     .from('client_reports')
-    .select('id, client_id, saved_at, state')
+    .select('id, client_id, saved_at, state, deleted_at')
     .order('saved_at', { ascending: false });
   if(reportsError) console.error('讀取報告紀錄失敗', reportsError);
 
@@ -346,7 +368,10 @@ async function fetchAllRecords(){
   });
 
   const records = clients.map(r => {
-    const clientReports = reportsByClient[r.id] || []; // 已經照 saved_at 新到舊排好
+    const allReports = reportsByClient[r.id] || []; // 已經照 saved_at 新到舊排好
+    const activeReports = allReports.filter(rep => !rep.deleted_at);
+    const deletedReports = allReports.filter(rep => rep.deleted_at)
+      .sort((a,b)=> new Date(b.deleted_at) - new Date(a.deleted_at));
     return {
       id: r.id,
       clientName: r.client_name,
@@ -354,9 +379,10 @@ async function fetchAllRecords(){
       notes: r.notes,
       followUpDate: r.follow_up_date,
       deletedAt: r.deleted_at,
-      reports: clientReports,
-      savedAt: clientReports[0] ? clientReports[0].saved_at : null,
-      state: clientReports[0] ? clientReports[0].state : null
+      reports: activeReports,
+      deletedReports: deletedReports,
+      savedAt: activeReports[0] ? activeReports[0].saved_at : null,
+      state: activeReports[0] ? activeReports[0].state : null
     };
   });
   // 沒有指定排序來源了（原本用 client_records.saved_at），改用最新一份報告時間排序
@@ -377,6 +403,28 @@ async function updateRecordField(id, field, value){
 async function permanentlyDeleteRecord(id){
   const { error } = await supabaseClient.from('client_records').delete().eq('id', id);
   if(error){ console.error('刪除失敗', error); alert('刪除失敗，請檢查網路連線後再試一次。'); }
+  return !error;
+}
+
+async function deleteReport(reportId){
+  const { error } = await supabaseClient
+    .from('client_reports')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', reportId);
+  if(error){ console.error('刪除報告失敗', error); alert('刪除失敗，請檢查網路連線後再試一次。'); }
+  return !error;
+}
+async function restoreReport(reportId){
+  const { error } = await supabaseClient
+    .from('client_reports')
+    .update({ deleted_at: null })
+    .eq('id', reportId);
+  if(error){ console.error('還原報告失敗', error); alert('還原失敗，請檢查網路連線後再試一次。'); }
+  return !error;
+}
+async function permanentlyDeleteReport(reportId){
+  const { error } = await supabaseClient.from('client_reports').delete().eq('id', reportId);
+  if(error){ console.error('永久刪除報告失敗', error); alert('刪除失敗，請檢查網路連線後再試一次。'); }
   return !error;
 }
 
@@ -496,13 +544,16 @@ function renderRecordList(){
         </div>
       </div>
 
-      ${reportCount > 0 ? `
-      <button class="report-history-toggle" data-id="${r.id}">📋 報告紀錄（${reportCount}）</button>
+      ${(reportCount > 0 || r.deletedReports.length > 0) ? `
+      <button class="report-history-toggle" data-id="${r.id}">📋 報告紀錄（${reportCount}）${r.deletedReports.length>0?'　・　已刪除 '+r.deletedReports.length+' 筆':''}</button>
       <div class="report-history" id="history-${r.id}">
         ${r.reports.map((rep, i)=>`
           <div class="report-history-row">
             <span class="rh-date">${i===0?'最新　':'　　　'}${formatDate(rep.saved_at)}</span>
-            <a href="blueprint.html?reportId=${encodeURIComponent(rep.id)}" target="_blank" rel="noopener">查看 →</a>
+            <div class="rh-actions">
+              <a href="blueprint.html?reportId=${encodeURIComponent(rep.id)}" target="_blank" rel="noopener">查看 →</a>
+              <button class="btn-history-delete" data-report-id="${rep.id}" data-client-id="${r.id}" title="刪除這筆報告（可還原）">✕</button>
+            </div>
           </div>
         `).join('')}
         ${reportCount >= 2 ? `
@@ -516,6 +567,20 @@ function renderRecordList(){
             ${r.reports.map((rep,i)=>`<option value="${rep.id}" ${i===0?'selected':''}>${formatDate(rep.saved_at)}</option>`).join('')}
           </select>
           <button class="btn-compare-go" data-id="${r.id}">開始比對 →</button>
+        </div>
+        ` : ''}
+        ${r.deletedReports.length > 0 ? `
+        <div class="report-history-trash">
+          <div class="report-history-trash-label">已刪除的報告</div>
+          ${r.deletedReports.map(rep=>`
+            <div class="report-history-row deleted">
+              <span class="rh-date">${formatDate(rep.saved_at)}　・　刪除於 ${formatDate(rep.deleted_at)}</span>
+              <div class="rh-actions">
+                <button class="btn-history-restore" data-report-id="${rep.id}">↩ 還原</button>
+                <button class="btn-history-purge" data-report-id="${rep.id}">永久刪除</button>
+              </div>
+            </div>
+          `).join('')}
         </div>
         ` : ''}
       </div>
@@ -546,6 +611,28 @@ function renderRecordList(){
   list.querySelectorAll('.report-history-toggle').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.getElementById('history-'+btn.dataset.id).classList.toggle('show');
+    });
+  });
+  list.querySelectorAll('.btn-history-delete').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const reportId = btn.dataset.reportId;
+      if(!confirm('確定要刪除這筆報告嗎？\n\n刪除後會先移到「已刪除報告」，還可以還原；按永久刪除才會真的沒辦法復原。')) return;
+      await deleteReport(reportId);
+      render();
+    });
+  });
+  list.querySelectorAll('.btn-history-restore').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      await restoreReport(btn.dataset.reportId);
+      render();
+    });
+  });
+  list.querySelectorAll('.btn-history-purge').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('確定要永久刪除這筆報告嗎？這一步之後真的沒辦法復原了。')) return;
+      await permanentlyDeleteReport(btn.dataset.reportId);
+      render();
     });
   });
   list.querySelectorAll('.btn-compare-go').forEach(btn=>{
