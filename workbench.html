@@ -165,47 +165,53 @@
     border:1px solid var(--line); padding:8px; z-index:250;
   }
   .user-menu.show{display:block;}
-  .user-menu.pricing-mode{width:min(760px, calc(100vw - 48px)); max-height:80vh; overflow-y:auto;}
-  .user-menu-default{display:block;}
-  .user-menu.pricing-mode .user-menu-default{display:none;}
-  .upgrade-panel{display:none;}
-  .user-menu.pricing-mode .upgrade-panel{display:block;}
-
-  /* ---------- 升級方案（嵌入頭像選單內） ---------- */
+  /* ---------- 升級方案（置中彈窗，非新分頁） ---------- */
+  .upgrade-overlay{
+    display:none; position:fixed; inset:0; background:rgba(15,35,44,0.55);
+    z-index:300; align-items:center; justify-content:center; padding:24px;
+  }
+  .upgrade-overlay.show{display:flex;}
+  .upgrade-box{
+    background:#fff; border-radius:20px; padding:32px 36px;
+    width:min(960px, 100%); max-height:88vh; overflow-y:auto;
+    box-shadow:0 24px 70px rgba(20,50,60,0.3);
+    font-family:"Noto Sans TC", sans-serif;
+  }
   .upgrade-header{
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;
   }
   .upgrade-header h4{
-    font-family:"Noto Serif TC", serif; font-size:15px; font-weight:700; color:var(--navy); margin:0;
+    font-family:"Noto Serif TC", serif; font-size:19px; font-weight:700; color:var(--navy); margin:0;
   }
   .upgrade-close{
     appearance:none; border:none; background:var(--paper); color:var(--ink-soft);
-    width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:13px;
-    display:flex; align-items:center; justify-content:center;
+    width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:15px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
   .upgrade-close:hover{background:var(--teal-tint); color:var(--teal-deep);}
-  .upgrade-plans{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px;}
+  .upgrade-plans{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:26px; align-items:stretch;}
   .upgrade-card{
-    background:#fff; border:1px solid var(--line-card); border-radius:14px;
-    padding:16px 14px; display:flex; flex-direction:column; gap:10px;
+    background:#fff; border:1px solid var(--line-card); border-radius:16px;
+    padding:20px 18px; display:flex; flex-direction:column; gap:12px;
   }
   .upgrade-card.master{border-color:var(--plum); background:var(--plum-tint);}
+  .upgrade-card .u-title-row{display:flex; align-items:center; gap:8px;}
+  .upgrade-card .u-name{font-family:"Noto Serif TC", serif; font-weight:700; font-size:17px; color:var(--navy);}
   .upgrade-card .u-tag{
-    font-family:"Roboto Mono", monospace; font-size:9.5px; letter-spacing:.06em;
-    color:var(--plum); background:#fff; padding:2px 8px; border-radius:20px; width:fit-content;
+    font-family:"Roboto Mono", monospace; font-size:10px; letter-spacing:.06em;
+    color:var(--plum); background:#fff; padding:2px 9px; border-radius:20px; width:fit-content;
   }
-  .upgrade-card .u-name{font-family:"Noto Serif TC", serif; font-weight:700; font-size:14px; color:var(--navy);}
-  .upgrade-card .u-pitch{font-size:11px; color:var(--ink-soft); line-height:1.6; min-height:32px;}
-  .upgrade-card .u-price{font-family:"Roboto Mono", monospace; font-size:18px; font-weight:600; color:var(--navy);}
+  .upgrade-card .u-pitch{font-size:12.5px; color:var(--ink-soft); line-height:1.7; min-height:38px;}
+  .upgrade-card .u-price{font-family:"Roboto Mono", monospace; font-size:22px; font-weight:600; color:var(--navy);}
   .upgrade-card.master .u-price{color:var(--plum-deep);}
-  .upgrade-card .u-price span{font-family:"Noto Sans TC", sans-serif; font-size:10.5px; font-weight:400; color:var(--ink-soft);}
-  .upgrade-card ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; flex:1;}
-  .upgrade-card li{font-size:11px; color:var(--ink); display:flex; gap:6px; line-height:1.5;}
+  .upgrade-card .u-price span{font-family:"Noto Sans TC", sans-serif; font-size:12px; font-weight:400; color:var(--ink-soft);}
+  .upgrade-card ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; flex:1;}
+  .upgrade-card li{font-size:12.5px; color:var(--ink); display:flex; gap:7px; line-height:1.6;}
   .upgrade-card li::before{content:"·"; font-weight:700; color:var(--teal); flex-shrink:0;}
   .upgrade-card.master li::before{color:var(--plum);}
   .upgrade-btn{
-    margin-top:auto; width:100%; padding:9px; border-radius:18px; border:1.5px solid var(--navy);
-    background:none; color:var(--navy); font-size:12px; font-weight:700; cursor:pointer;
+    margin-top:auto; width:100%; padding:11px; border-radius:20px; border:1.5px solid var(--navy);
+    background:none; color:var(--navy); font-size:13px; font-weight:700; cursor:pointer;
     font-family:"Noto Sans TC", sans-serif;
   }
   .upgrade-btn:hover{background:var(--navy); color:#fff;}
@@ -215,18 +221,19 @@
   .upgrade-btn.primary:hover{background:var(--teal-deep); border-color:var(--teal-deep);}
   .upgrade-btn.master-btn{background:var(--plum); border-color:var(--plum); color:#fff;}
   .upgrade-btn.master-btn:hover{background:var(--plum-deep); border-color:var(--plum-deep);}
-  .upgrade-ledger{width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:16px;}
-  .upgrade-ledger th, .upgrade-ledger td{padding:9px 8px; text-align:left; border-bottom:1px solid var(--line-card);}
-  .upgrade-ledger thead th{font-family:"Roboto Mono", monospace; font-size:10px; color:var(--ink-soft); font-weight:600;}
+  .upgrade-ledger{width:100%; border-collapse:collapse; font-size:13px; margin-bottom:18px;}
+  .upgrade-ledger th, .upgrade-ledger td{padding:11px 10px; text-align:left; border-bottom:1px solid var(--line-card);}
+  .upgrade-ledger thead th{font-family:"Roboto Mono", monospace; font-size:11px; color:var(--ink-soft); font-weight:600;}
   .upgrade-ledger thead th:not(:first-child){text-align:center;}
   .upgrade-ledger tbody th{font-weight:500; color:var(--ink); width:34%;}
-  .upgrade-ledger td{text-align:center; color:var(--ink-soft); font-family:"Roboto Mono", monospace; font-size:11px;}
+  .upgrade-ledger td{text-align:center; color:var(--ink-soft); font-family:"Roboto Mono", monospace; font-size:12px;}
   .upgrade-ledger td.yes{color:var(--positive); font-family:"Noto Sans TC", sans-serif; font-weight:700;}
   .upgrade-ledger td.no{color:rgba(24,34,38,0.28); font-family:"Noto Sans TC", sans-serif;}
   .upgrade-ledger tbody tr:last-child th, .upgrade-ledger tbody tr:last-child td{border-bottom:none;}
-  .upgrade-note{font-size:10.5px; color:var(--ink-soft); line-height:1.7; margin:0;}
-  @media (max-width:520px){
+  .upgrade-note{font-size:11.5px; color:var(--ink-soft); line-height:1.8; margin:0;}
+  @media (max-width:720px){
     .upgrade-plans{grid-template-columns:1fr;}
+    .upgrade-box{padding:24px 20px;}
   }
 
   .jk-toast{
@@ -542,91 +549,28 @@
       </div>
 
       <div class="user-menu" id="userMenu">
-        <div class="user-menu-default">
-          <div class="trial-badge" id="trialBadge" style="display:none;"></div>
-          <button class="user-menu-item" id="menuAccountSettings">
-            <span class="icon">⚙️</span> 帳號設定
-          </button>
-          <button class="user-menu-item" id="menuUpgrade">
-            <span class="icon">⬆</span> 升級方案
-          </button>
-          <div class="user-menu-fontsize">
-            <div class="user-menu-label">字體大小</div>
-            <div class="font-size-pills" id="fontSizePills">
-              <button class="font-size-pill" data-size="small">小</button>
-              <button class="font-size-pill" data-size="medium">中</button>
-              <button class="font-size-pill" data-size="large">大</button>
-            </div>
+        <div class="trial-badge" id="trialBadge" style="display:none;"></div>
+        <button class="user-menu-item" id="menuAccountSettings">
+          <span class="icon">⚙️</span> 帳號設定
+        </button>
+        <button class="user-menu-item" id="menuUpgrade">
+          <span class="icon">⬆</span> 升級方案
+        </button>
+        <div class="user-menu-fontsize">
+          <div class="user-menu-label">字體大小</div>
+          <div class="font-size-pills" id="fontSizePills">
+            <button class="font-size-pill" data-size="small">小</button>
+            <button class="font-size-pill" data-size="medium">中</button>
+            <button class="font-size-pill" data-size="large">大</button>
           </div>
-          <div class="user-menu-fontsize">
-            <div class="user-menu-label">主題色系</div>
-            <div class="theme-swatch-grid" id="themeSwatchGrid"></div>
-          </div>
-          <button class="user-menu-item danger" id="menuLogout">
-            <span class="icon">↩</span> 登出
-          </button>
         </div>
-
-        <div class="upgrade-panel">
-          <div class="upgrade-header">
-            <h4>升級方案</h4>
-            <button class="upgrade-close" id="upgradeClose" title="關閉">✕</button>
-          </div>
-
-          <div class="upgrade-plans">
-            <div class="upgrade-card">
-              <div class="u-name">Free</div>
-              <div class="u-pitch">剛開始，先把工具用起來，感受一下。</div>
-              <div class="u-price">0<span> 元/月</span></div>
-              <ul>
-                <li>客戶資料最多 20 位</li>
-                <li>試算工具箱全部 5 大模組</li>
-                <li>財富地圖問卷（首次填答）</li>
-                <li>經典藍綠主題</li>
-              </ul>
-              <button class="upgrade-btn current" disabled>目前方案</button>
-            </div>
-
-            <div class="upgrade-card">
-              <div class="u-name">Pro</div>
-              <div class="u-pitch">客戶量開始起來了，你需要的是效率，不是重複勞動。</div>
-              <div class="u-price">590<span> 元/月</span></div>
-              <ul>
-                <li>客戶資料最多 100 位</li>
-                <li>財富地圖追蹤更新＋成長比對</li>
-                <li>3 套主題色系（酒紅／森林／石墨）</li>
-                <li>Free 的所有功能</li>
-              </ul>
-              <button class="upgrade-btn primary" onclick="jkUpgradeRequest('Pro')">升級到 Pro</button>
-            </div>
-
-            <div class="upgrade-card master">
-              <div class="u-tag">限定</div>
-              <div class="u-name">Master</div>
-              <div class="u-pitch">你不只是顧問，你在帶團隊。</div>
-              <div class="u-price">1690<span> 元/月</span></div>
-              <ul>
-                <li>客戶資料無上限</li>
-                <li>團隊工作量監控</li>
-                <li>2 套限定主題色系（墨紫／黑金）</li>
-                <li>Pro 的所有功能</li>
-              </ul>
-              <button class="upgrade-btn master-btn" onclick="jkUpgradeRequest('Master')">升級到 Master</button>
-            </div>
-          </div>
-
-          <table class="upgrade-ledger">
-            <thead><tr><th></th><th>Free</th><th>Pro</th><th>Master</th></tr></thead>
-            <tbody>
-              <tr><th>客戶資料容量</th><td>20 位</td><td>100 位</td><td>無上限</td></tr>
-              <tr><th>追蹤更新＋成長比對</th><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-              <tr><th>主題色系</th><td>經典藍綠</td><td>+酒紅／森林／石墨</td><td>+墨紫／黑金（限定）</td></tr>
-              <tr><th>團隊工作量監控</th><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
-            </tbody>
-          </table>
-
-          <p class="upgrade-note">降級或取消訂閱不會刪除超出容量的客戶資料，只會先鎖起來，回來升級隨時復原。目前金流串接申請中，升級請求會先送給我確認開通。</p>
+        <div class="user-menu-fontsize">
+          <div class="user-menu-label">主題色系</div>
+          <div class="theme-swatch-grid" id="themeSwatchGrid"></div>
         </div>
+        <button class="user-menu-item danger" id="menuLogout">
+          <span class="icon">↩</span> 登出
+        </button>
       </div>
     </div>
   </aside>
@@ -646,6 +590,68 @@
     <iframe id="frame-marketoverview" src="modules/market-overview.html" title="市場概況"></iframe>
     <iframe id="frame-simulation" src="modules/simulation.html" title="沙盤推演必勝"></iframe>
   </main>
+</div>
+
+<div class="upgrade-overlay" id="upgradeOverlay">
+  <div class="upgrade-box">
+    <div class="upgrade-header">
+      <h4>升級方案</h4>
+      <button class="upgrade-close" id="upgradeClose" title="關閉">✕</button>
+    </div>
+
+    <div class="upgrade-plans">
+      <div class="upgrade-card">
+        <div class="u-title-row"><div class="u-name">Free</div></div>
+        <div class="u-pitch">剛開始，先把工具用起來，感受一下。</div>
+        <div class="u-price">0<span> 元/月</span></div>
+        <ul>
+          <li>客戶資料最多 20 位</li>
+          <li>試算工具箱全部 5 大模組</li>
+          <li>財富地圖問卷（首次填答）</li>
+          <li>經典藍綠主題</li>
+        </ul>
+        <button class="upgrade-btn current" disabled>目前方案</button>
+      </div>
+
+      <div class="upgrade-card">
+        <div class="u-title-row"><div class="u-name">Pro</div></div>
+        <div class="u-pitch">客戶量開始起來了，你需要的是效率，不是重複勞動。升級解鎖全面提升工作效率。</div>
+        <div class="u-price">590<span> 元/月</span></div>
+        <ul>
+          <li>客戶資料最多 100 位</li>
+          <li>財富地圖追蹤更新＋成長比對</li>
+          <li>3 套主題色系（酒紅／森林／石墨）</li>
+          <li>Free 的所有功能</li>
+        </ul>
+        <button class="upgrade-btn primary" onclick="jkUpgradeRequest('Pro')">升級到 Pro</button>
+      </div>
+
+      <div class="upgrade-card master">
+        <div class="u-title-row"><div class="u-name">Master</div><div class="u-tag">限定</div></div>
+        <div class="u-pitch">你不只是顧問，你在帶團隊。升級解鎖全面提升管理效率。</div>
+        <div class="u-price">1690<span> 元/月</span></div>
+        <ul>
+          <li>客戶資料無上限</li>
+          <li>團隊工作量監控</li>
+          <li>2 套限定主題色系（墨紫／黑金）</li>
+          <li>Pro 的所有功能</li>
+        </ul>
+        <button class="upgrade-btn master-btn" onclick="jkUpgradeRequest('Master')">升級到 Master</button>
+      </div>
+    </div>
+
+    <table class="upgrade-ledger">
+      <thead><tr><th></th><th>Free</th><th>Pro</th><th>Master</th></tr></thead>
+      <tbody>
+        <tr><th>客戶資料容量</th><td>20 位</td><td>100 位</td><td>無上限</td></tr>
+        <tr><th>追蹤更新＋成長比對</th><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><th>主題色系</th><td>經典藍綠</td><td>+酒紅／森林／石墨</td><td>+墨紫／黑金（限定）</td></tr>
+        <tr><th>團隊工作量監控</th><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      </tbody>
+    </table>
+
+    <p class="upgrade-note">降級或取消訂閱不會刪除超出容量的客戶資料，只會先鎖起來，回來升級隨時復原。目前金流串接申請中，升級請求會先送給我確認開通。</p>
+  </div>
 </div>
 
 <div class="settings-overlay" id="settingsOverlay">
@@ -721,17 +727,20 @@
   document.addEventListener('click', (e)=>{
     if(userMenu.classList.contains('show') && !userMenu.contains(e.target) && e.target.id!=='userAvatar'){
       userMenu.classList.remove('show');
-      userMenu.classList.remove('pricing-mode');
     }
   });
 
-  // ---- 升級方案：在同一個選單內切換顯示，不另開分頁 ----
+  // ---- 升級方案：置中彈窗顯示，不另開分頁 ----
+  const upgradeOverlay = document.getElementById('upgradeOverlay');
   document.getElementById('menuUpgrade').addEventListener('click', ()=>{
-    userMenu.classList.add('pricing-mode');
+    userMenu.classList.remove('show');
+    upgradeOverlay.classList.add('show');
   });
   document.getElementById('upgradeClose').addEventListener('click', ()=>{
-    userMenu.classList.remove('show');
-    userMenu.classList.remove('pricing-mode');
+    upgradeOverlay.classList.remove('show');
+  });
+  upgradeOverlay.addEventListener('click', (e)=>{
+    if(e.target.id==='upgradeOverlay') upgradeOverlay.classList.remove('show');
   });
   function jkUpgradeRequest(planName){
     // TODO：綠界金流申請通過後，這裡改接真正的付款/升級流程
@@ -747,7 +756,6 @@
 
   document.getElementById('menuAccountSettings').addEventListener('click', ()=>{
     userMenu.classList.remove('show');
-    userMenu.classList.remove('pricing-mode');
     settingsError.classList.remove('show');
     settingsSuccess.classList.remove('show');
     document.getElementById('newPasswordInput').value = '';
