@@ -1940,6 +1940,11 @@ async function tryLoadRecordFromQuery(){
 
   if(trackClientId){
     try{
+      const effective = await fetchEffectivePlan();
+      if(effective.plan === 'free'){
+        alert('追蹤更新是 Pro 以上方案才能使用的功能，升級之後就能使用囉。');
+        return false;
+      }
       const { data: latestReport, error } = await supabaseClient
         .from('client_reports')
         .select('state')

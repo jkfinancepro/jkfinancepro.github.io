@@ -147,6 +147,9 @@
     font-family:"Noto Sans TC",sans-serif;
   }
   .btn-refresh:hover{background:var(--warm-tint);}
+  .btn-refresh.locked{color:var(--ink-soft);border-color:var(--line);}
+  .btn-refresh.locked:hover{background:var(--paper);}
+  .locked-hint{font-size:12px;color:var(--ink-soft);}
   .report-history-toggle{
     display:inline-flex; align-items:center; gap:5px; background:none; border:none;
     color:var(--ink-soft); font-size:11.5px; cursor:pointer; padding:0; margin-top:10px;
@@ -523,6 +526,9 @@ function renderRecordList(){
     return 0;
   });
 
+  // Free 方案不開放追蹤更新／報告比對，這兩個是 Pro 以上才有的功能
+  const canTrackUpdate = currentPlan !== 'free';
+
   list.innerHTML = sorted.map(r => {
     const isOverdue = (()=>{ const d=daysUntil(r.followUpDate); return d!==null && d<=0; })();
     const statusOpt = STATUS_OPTIONS.find(s=>s.key===(r.status||'')) || STATUS_OPTIONS[0];
@@ -539,7 +545,9 @@ function renderRecordList(){
         </div>
         <div class="record-actions">
           ${latestReport ? `<a class="btn-view" href="blueprint.html?reportId=${encodeURIComponent(latestReport.id)}" target="_blank" rel="noopener">查看最新報告 →</a>` : ''}
-          <a class="btn-refresh" href="blueprint.html?trackClientId=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">🔄 追蹤更新</a>
+          ${canTrackUpdate
+            ? `<a class="btn-refresh" href="blueprint.html?trackClientId=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">🔄 追蹤更新</a>`
+            : `<button class="btn-refresh locked" data-locked-feature="追蹤更新" title="追蹤更新需要 Pro 以上方案">🔒 追蹤更新</button>`}
           <button class="btn-delete" data-id="${r.id}">刪除</button>
         </div>
       </div>
@@ -559,6 +567,7 @@ function renderRecordList(){
         ${reportCount >= 2 ? `
         <div class="compare-panel">
           <label>比對報告</label>
+          ${canTrackUpdate ? `
           <select class="compare-select-a" data-id="${r.id}">
             ${r.reports.map((rep,i)=>`<option value="${rep.id}" ${i===r.reports.length-1?'selected':''}>${formatDate(rep.saved_at)}</option>`).join('')}
           </select>
@@ -567,6 +576,9 @@ function renderRecordList(){
             ${r.reports.map((rep,i)=>`<option value="${rep.id}" ${i===0?'selected':''}>${formatDate(rep.saved_at)}</option>`).join('')}
           </select>
           <button class="btn-compare-go" data-id="${r.id}">開始比對 →</button>
+          ` : `
+          <span class="locked-hint">🔒 報告比對需要 Pro 以上方案</span>
+          `}
         </div>
         ` : ''}
         ${r.deletedReports.length > 0 ? `
@@ -606,6 +618,11 @@ function renderRecordList(){
       if(!confirm('確定要刪除這筆客戶紀錄嗎？\n\n刪除後會先移到「已刪除」，還可以還原；如果從「已刪除」裡按永久刪除，才會真的沒辦法復原。')) return;
       await updateRecordField(btn.dataset.id, 'deletedAt', new Date().toISOString());
       render();
+    });
+  });
+  list.querySelectorAll('[data-locked-feature]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      alert('「'+btn.dataset.lockedFeature+'」需要升級到 Pro 以上方案才能使用，可以到左下角頭像選單裡的「升級方案」了解詳情。');
     });
   });
   list.querySelectorAll('.report-history-toggle').forEach(btn=>{
