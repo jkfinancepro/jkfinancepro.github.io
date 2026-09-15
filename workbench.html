@@ -344,6 +344,13 @@
   }
   .user-info{flex:1; min-width:0;}
   .user-name{font-size:13px; font-weight:600; color:var(--paper); margin-bottom:2px;}
+  .user-plan-badge{
+    display:inline-block; font-family:"Roboto Mono", monospace; font-size:9.5px; font-weight:700;
+    letter-spacing:.06em; padding:2px 8px; border-radius:10px; text-transform:uppercase;
+  }
+  .user-plan-badge.free{background:rgba(245,247,246,0.12); color:var(--text-dim);}
+  .user-plan-badge.pro{background:rgba(46,115,145,0.28); color:var(--teal-light-text);}
+  .user-plan-badge.master{background:rgba(201,151,90,0.22); color:#E3C99A;}
   .logout-btn{
     appearance:none; border:none; background:none; padding:0;
     font-size:11px; color:rgba(245,247,246,0.45); cursor:pointer;
@@ -546,6 +553,7 @@
       <div class="user-avatar" id="userAvatar" title="選單" style="cursor:pointer;">J</div>
       <div class="user-info">
         <div class="user-name" id="userName">Jess</div>
+        <span class="user-plan-badge free" id="userPlanBadge">Free</span>
       </div>
 
       <div class="user-menu" id="userMenu">
@@ -610,7 +618,7 @@
           <li>財富地圖問卷（首次填答）</li>
           <li>經典藍綠主題</li>
         </ul>
-        <button class="upgrade-btn current" disabled>目前方案</button>
+        <button class="upgrade-btn current" id="planBtnFree" disabled>目前方案</button>
       </div>
 
       <div class="upgrade-card">
@@ -623,7 +631,7 @@
           <li>3 套主題色系（酒紅／森林／石墨）</li>
           <li>Free 的所有功能</li>
         </ul>
-        <button class="upgrade-btn primary" onclick="jkUpgradeRequest('Pro')">升級到 Pro</button>
+        <button class="upgrade-btn primary" id="planBtnPro" onclick="jkUpgradeRequest('Pro')">升級到 Pro</button>
       </div>
 
       <div class="upgrade-card master">
@@ -636,7 +644,7 @@
           <li>2 套限定主題色系（墨紫／黑金）</li>
           <li>Pro 的所有功能</li>
         </ul>
-        <button class="upgrade-btn master-btn" onclick="jkUpgradeRequest('Master')">升級到 Master</button>
+        <button class="upgrade-btn master-btn" id="planBtnMaster" onclick="jkUpgradeRequest('Master')">升級到 Master</button>
       </div>
     </div>
 
@@ -823,6 +831,38 @@
   const TIER_RANK = { free:0, pro:1, master:2 };
   let myPlan = 'free';
 
+  // ---- 帳號旁的方案小方框，跟升級彈窗裡每張卡片的按鈕狀態，都照目前實際方案顯示 ----
+  function applyCurrentPlanToAccountUI(plan){
+    const rank = TIER_RANK[plan] ?? 0;
+    const PLAN_LABEL = { free:'Free', pro:'Pro', master:'Master' };
+    const badge = document.getElementById('userPlanBadge');
+    if(badge){
+      badge.textContent = PLAN_LABEL[plan] || 'Free';
+      badge.className = 'user-plan-badge ' + plan;
+    }
+    ['free','pro','master'].forEach(tier=>{
+      const btn = document.getElementById('planBtn' + tier.charAt(0).toUpperCase() + tier.slice(1));
+      if(!btn) return;
+      btn.classList.remove('current','primary','master-btn');
+      btn.disabled = false;
+      btn.onclick = null;
+      if(tier === plan){
+        btn.textContent = '目前方案';
+        btn.classList.add('current');
+        btn.disabled = true;
+      } else if(TIER_RANK[tier] < rank){
+        btn.textContent = '已包含';
+        btn.classList.add('current');
+        btn.disabled = true;
+      } else {
+        const label = PLAN_LABEL[tier];
+        btn.textContent = '升級到 ' + label;
+        btn.classList.add(tier==='pro' ? 'primary' : 'master-btn');
+        btn.onclick = ()=> jkUpgradeRequest(label);
+      }
+    });
+  }
+
   function applyThemeEverywhere(themeKey){
     const t = JK_THEMES[themeKey];
     if(!t || TIER_RANK[t.tier] > TIER_RANK[myPlan]) return; // 超出方案權限，擋下來不套用
@@ -849,6 +889,7 @@
   (async function initTheme(){
     const effective = await fetchEffectivePlan();
     myPlan = effective.plan;
+    applyCurrentPlanToAccountUI(myPlan);
     const trialBadge = document.getElementById('trialBadge');
     if(effective.inTrial){
       const left = daysLeft(effective.trialEndsAt);
