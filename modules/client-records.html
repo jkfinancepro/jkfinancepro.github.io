@@ -120,6 +120,51 @@
   }
   .btn-edit-track:hover{background:var(--teal-tint);}
 
+  /* ---- 追蹤更新／報告歷史／比對 ---- */
+  .btn-refresh{
+    display:inline-flex;align-items:center;gap:6px;background:none;color:var(--warm-deep);
+    border:1px solid var(--warm); padding:9px 16px;border-radius:18px;
+    font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;
+    font-family:"Noto Sans TC",sans-serif;
+  }
+  .btn-refresh:hover{background:var(--warm-tint);}
+  .report-history-toggle{
+    display:inline-flex; align-items:center; gap:5px; background:none; border:none;
+    color:var(--ink-soft); font-size:11.5px; cursor:pointer; padding:0; margin-top:10px;
+    font-family:"Noto Sans TC",sans-serif; text-decoration:underline; text-underline-offset:2px;
+  }
+  .report-history-toggle:hover{color:var(--teal-deep);}
+  .report-history{
+    display:none; margin-top:10px; padding:12px 14px; background:var(--paper);
+    border-radius:10px; border:1px solid var(--line);
+  }
+  .report-history.show{display:block;}
+  .report-history-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:6px 0; font-size:12px; color:var(--ink-soft);
+  }
+  .report-history-row:not(:last-child){border-bottom:1px dashed var(--line);}
+  .report-history-row .rh-date{font-family:"Roboto Mono",monospace; color:var(--ink);}
+  .report-history-row a{color:var(--teal-deep); font-weight:700; text-decoration:none; font-size:11.5px;}
+  .report-history-row a:hover{text-decoration:underline;}
+
+  .compare-panel{
+    margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .compare-panel label{font-size:11.5px; color:var(--ink-soft); font-weight:700;}
+  .compare-panel select{
+    border:1.5px solid var(--line); border-radius:8px; padding:6px 10px;
+    font-size:12px; font-family:"Noto Sans TC",sans-serif; color:var(--ink); cursor:pointer;
+  }
+  .btn-compare-go{
+    background:var(--navy); color:#fff; border:none; padding:8px 16px; border-radius:16px;
+    font-size:12px; font-weight:700; cursor:pointer; font-family:"Noto Sans TC",sans-serif;
+    text-decoration:none; display:inline-flex; align-items:center;
+  }
+  .btn-compare-go:hover{background:var(--teal-deep);}
+  .btn-compare-go[disabled]{opacity:.5; cursor:default; pointer-events:none;}
+
   /* ---- 編輯彈窗 ---- */
   .modal-overlay{
     display:none; position:fixed; inset:0; background:rgba(22,50,63,0.5);
@@ -170,7 +215,7 @@
   <div class="wrap">
     <div class="eyebrow">Client Records · 客戶資料</div>
     <h1>每一份填完的財富地圖，都留在這裡</h1>
-    <p>客戶在財富地圖填完問卷、生成報告的當下，會自動存一筆紀錄在這裡。幫每筆紀錄取個名字，之後隨時可以回來查看當時的完整報告。</p>
+    <p>客戶在財富地圖填完問卷、生成報告的當下，會自動存一筆紀錄在這裡。半年、一年後回訪，點「追蹤更新」直接帶入上次的答案微調，舊的報告不會被蓋掉，還能挑兩份出來比對成長狀況。</p>
   </div>
 </header>
 
@@ -254,24 +299,43 @@ const FIELD_TO_COLUMN = {
 };
 
 async function fetchAllRecords(){
-  const { data, error } = await supabaseClient
+  const { data: clients, error } = await supabaseClient
     .from('client_records')
-    .select('*')
-    .order('saved_at', { ascending: false });
+    .select('*');
   if(error){
     console.error('讀取客戶資料失敗', error);
     return [];
   }
-  return data.map(r => ({
-    id: r.id,
-    savedAt: r.saved_at,
-    clientName: r.client_name,
-    status: r.status,
-    notes: r.notes,
-    followUpDate: r.follow_up_date,
-    deletedAt: r.deleted_at,
-    state: r.state
-  }));
+
+  const { data: reports, error: reportsError } = await supabaseClient
+    .from('client_reports')
+    .select('id, client_id, saved_at, state')
+    .order('saved_at', { ascending: false });
+  if(reportsError) console.error('讀取報告紀錄失敗', reportsError);
+
+  const reportsByClient = {};
+  (reports||[]).forEach(r=>{
+    if(!reportsByClient[r.client_id]) reportsByClient[r.client_id] = [];
+    reportsByClient[r.client_id].push(r);
+  });
+
+  const records = clients.map(r => {
+    const clientReports = reportsByClient[r.id] || []; // 已經照 saved_at 新到舊排好
+    return {
+      id: r.id,
+      clientName: r.client_name,
+      status: r.status,
+      notes: r.notes,
+      followUpDate: r.follow_up_date,
+      deletedAt: r.deleted_at,
+      reports: clientReports,
+      savedAt: clientReports[0] ? clientReports[0].saved_at : null,
+      state: clientReports[0] ? clientReports[0].state : null
+    };
+  });
+  // 沒有指定排序來源了（原本用 client_records.saved_at），改用最新一份報告時間排序
+  records.sort((a,b)=> new Date(b.savedAt||0) - new Date(a.savedAt||0));
+  return records;
 }
 
 async function updateRecordField(id, field, value){
@@ -364,19 +428,48 @@ async function render(){
     const isOverdue = (()=>{ const d=daysUntil(r.followUpDate); return d!==null && d<=0; })();
     const statusOpt = STATUS_OPTIONS.find(s=>s.key===(r.status||'')) || STATUS_OPTIONS[0];
     const followUpText = r.followUpDate ? r.followUpDate.replace(/-/g,'/') : '尚未設定';
+    const reportCount = r.reports.length;
+    const latestReport = r.reports[0];
     return `
     <div class="record-card ${isOverdue?'overdue':''}" data-id="${r.id}">
       <div class="record-top">
         <div class="record-name-wrap">
           <div class="record-name-display ${(r.clientName||'').trim() ? '' : 'unnamed'}">${(r.clientName||'').trim() || '尚未命名（點下方編輯設定）'}</div>
-          <div class="record-meta">填答時間：${formatDate(r.savedAt)}</div>
+          <div class="record-meta">最新填答：${formatDate(r.savedAt)}　・　共 ${reportCount} 份報告</div>
           <div class="record-summary">${summarize(r.state)}</div>
         </div>
         <div class="record-actions">
-          <a class="btn-view" href="blueprint.html?recordId=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">查看報告 →</a>
+          ${latestReport ? `<a class="btn-view" href="blueprint.html?reportId=${encodeURIComponent(latestReport.id)}" target="_blank" rel="noopener">查看最新報告 →</a>` : ''}
+          <a class="btn-refresh" href="blueprint.html?trackClientId=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">🔄 追蹤更新</a>
           <button class="btn-delete" data-id="${r.id}">刪除</button>
         </div>
       </div>
+
+      ${reportCount > 0 ? `
+      <button class="report-history-toggle" data-id="${r.id}">📋 報告紀錄（${reportCount}）</button>
+      <div class="report-history" id="history-${r.id}">
+        ${r.reports.map((rep, i)=>`
+          <div class="report-history-row">
+            <span class="rh-date">${i===0?'最新　':'　　　'}${formatDate(rep.saved_at)}</span>
+            <a href="blueprint.html?reportId=${encodeURIComponent(rep.id)}" target="_blank" rel="noopener">查看 →</a>
+          </div>
+        `).join('')}
+        ${reportCount >= 2 ? `
+        <div class="compare-panel">
+          <label>比對報告</label>
+          <select class="compare-select-a" data-id="${r.id}">
+            ${r.reports.map((rep,i)=>`<option value="${rep.id}" ${i===r.reports.length-1?'selected':''}>${formatDate(rep.saved_at)}</option>`).join('')}
+          </select>
+          <span style="color:var(--ink-soft);font-size:12px;">vs</span>
+          <select class="compare-select-b" data-id="${r.id}">
+            ${r.reports.map((rep,i)=>`<option value="${rep.id}" ${i===0?'selected':''}>${formatDate(rep.saved_at)}</option>`).join('')}
+          </select>
+          <button class="btn-compare-go" data-id="${r.id}">開始比對 →</button>
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+
       <div class="record-track-row">
         <div class="track-info">
           <span class="status-badge" style="color:${statusOpt.color};background:${statusOpt.bg};">${statusOpt.label}</span>
@@ -397,6 +490,20 @@ async function render(){
       if(!confirm('確定要刪除這筆客戶紀錄嗎？\n\n刪除後會先移到「已刪除」，還可以還原；如果從「已刪除」裡按永久刪除，才會真的沒辦法復原。')) return;
       await updateRecordField(btn.dataset.id, 'deletedAt', new Date().toISOString());
       render();
+    });
+  });
+  list.querySelectorAll('.report-history-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.getElementById('history-'+btn.dataset.id).classList.toggle('show');
+    });
+  });
+  list.querySelectorAll('.btn-compare-go').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.id;
+      const a = list.querySelector(`.compare-select-a[data-id="${id}"]`).value;
+      const b = list.querySelector(`.compare-select-b[data-id="${id}"]`).value;
+      if(a === b){ alert('請選兩份不同的報告再比對。'); return; }
+      window.open(`report-compare.html?reportId1=${encodeURIComponent(a)}&reportId2=${encodeURIComponent(b)}`, '_blank');
     });
   });
 

@@ -1814,15 +1814,21 @@ function renderSummaryHTML(){
 /* ---------------- 讀取動畫 → 報告 ---------------- */
 const LOADING_MESSAGES = ["整理基本資料中","描繪家庭關係圖","計算現金流向","盤點資產與負債","分析財務個性","對齊財富願景","繪製地圖最後一筆線條"];
 
-/* ---------------- 客戶資料：真正存進雲端資料庫（Supabase） ---------------- */
-let isViewingSavedRecord = false;
-let currentSessionRecordId = null;
+/* ---------------- 客戶資料：真正存進雲端資料庫（Supabase） ----------------
+   資料分兩層：
+   - client_records：客戶本身（姓名／狀態／筆記），一位客戶一列，不會重複新增
+   - client_reports：每一次填答的完整快照，一位客戶可以有很多列，
+     「查看報告」讀某一筆、「追蹤更新」帶入最新一筆但送出時永遠是新增一筆
+------------------------------------------------------------------------- */
+let isViewingSavedRecord = false;  // true＝純檢視某一份舊報告，不可編輯、不會存檔
+let currentSessionRecordId = null; // 目前檢視中的 report id（client_reports.id）
+let trackingClientId = null;       // 追蹤更新模式下，這是哪一位客戶（client_records.id）
 
 const PLAN_LIMITS = { free: 20, pro: 100, master: null };
 
 async function checkClientLimitBeforeSave(){
-  // 已經在編輯既有紀錄，不算新增一筆，不用檢查容量
-  if(isViewingSavedRecord || currentSessionRecordId) return true;
+  // 純檢視舊報告、或針對既有客戶做追蹤更新，都不算新增一位客戶，不用檢查容量
+  if(isViewingSavedRecord || trackingClientId) return true;
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session) return true;
   const effective = await fetchEffectivePlan();
@@ -1847,7 +1853,7 @@ async function handleGenerateReport(){
 }
 
 async function saveClientRecord(){
-  if(isViewingSavedRecord) return;
+  if(isViewingSavedRecord) return; // 純檢視舊報告，不寫入
   try{
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(!session) return; // 沒登入的狀態不會存檔
@@ -1856,21 +1862,28 @@ async function saveClientRecord(){
       incomeGroups, expenseGroups, assetGroups, liabilityGroups,
       investCostBasis, investHoldYears
     };
-    if(currentSessionRecordId){
-      const { error } = await supabaseClient
-        .from('client_records')
-        .update({ saved_at: new Date().toISOString(), state: stateSnapshot })
-        .eq('id', currentSessionRecordId);
-      if(error) console.error('更新客戶紀錄失敗', error);
-    } else {
+
+    let clientId = trackingClientId;
+    if(!clientId){
+      // 全新客戶：先建立 client_records 這一列，之後同一個 session 都用這個 id，不會重複新增
       const { data, error } = await supabaseClient
         .from('client_records')
-        .insert({ advisor_id: session.user.id, client_name: '', state: stateSnapshot })
+        .insert({ advisor_id: session.user.id, client_name: '' })
         .select('id')
         .single();
       if(error){ console.error('新增客戶紀錄失敗', error); return; }
-      currentSessionRecordId = data.id;
+      clientId = data.id;
+      trackingClientId = clientId;
     }
+
+    // 不論全新客戶或追蹤更新，這裡永遠是「新增一筆報告」，不會覆蓋舊資料
+    const { data: reportRow, error: reportError } = await supabaseClient
+      .from('client_reports')
+      .insert({ client_id: clientId, advisor_id: session.user.id, state: stateSnapshot })
+      .select('id')
+      .single();
+    if(reportError){ console.error('新增報告紀錄失敗', reportError); return; }
+    currentSessionRecordId = reportRow.id;
   }catch(e){ console.error('儲存客戶紀錄失敗', e); }
 }
 
@@ -1879,36 +1892,76 @@ function replaceArrayInPlace(target, source){
   (source||[]).forEach(item=>target.push(item));
 }
 
+function applyStateToForm(s){
+  if(!s) return;
+  Object.assign(basicA, s.basicA);
+  Object.assign(backerA, s.backerA);
+  Object.assign(riskA, s.riskA);
+  Object.assign(decisionA, s.decisionA);
+  Object.assign(moneyA, s.moneyA);
+  Object.assign(eventsA, s.eventsA);
+  Object.assign(visionA, s.visionA);
+  investCostBasis = s.investCostBasis || 0;
+  investHoldYears = s.investHoldYears || 0;
+  replaceArrayInPlace(incomeGroups, s.incomeGroups);
+  replaceArrayInPlace(expenseGroups, s.expenseGroups);
+  replaceArrayInPlace(assetGroups, s.assetGroups);
+  replaceArrayInPlace(liabilityGroups, s.liabilityGroups);
+}
+
+/* 網址帶 ?reportId=  → 純檢視某一份已存的報告（唯讀，直接跳到報告畫面）
+   網址帶 ?trackClientId= → 追蹤更新：帶入該客戶最新一份報告，從問卷第一題開始、可編輯，
+                             送出後會新增一筆報告，不會動到舊的 */
 async function tryLoadRecordFromQuery(){
   const params = new URLSearchParams(window.location.search);
-  const recordId = params.get('recordId');
-  if(!recordId) return false;
-  try{
-    const { data: record, error } = await supabaseClient
-      .from('client_records')
-      .select('state, client_name')
-      .eq('id', recordId)
-      .single();
-    if(error || !record) return false;
-    const s = record.state;
-    loadedClientName = record.client_name || '';
-    Object.assign(basicA, s.basicA);
-    Object.assign(backerA, s.backerA);
-    Object.assign(riskA, s.riskA);
-    Object.assign(decisionA, s.decisionA);
-    Object.assign(moneyA, s.moneyA);
-    Object.assign(eventsA, s.eventsA);
-    Object.assign(visionA, s.visionA);
-    investCostBasis = s.investCostBasis || 0;
-    investHoldYears = s.investHoldYears || 0;
-    replaceArrayInPlace(incomeGroups, s.incomeGroups);
-    replaceArrayInPlace(expenseGroups, s.expenseGroups);
-    replaceArrayInPlace(assetGroups, s.assetGroups);
-    replaceArrayInPlace(liabilityGroups, s.liabilityGroups);
-    isViewingSavedRecord = true;
-    currentSessionRecordId = recordId;
-    return true;
-  }catch(e){ console.error('讀取客戶紀錄失敗', e); return false; }
+  const reportId = params.get('reportId');
+  const trackClientId = params.get('trackClientId');
+
+  if(reportId){
+    try{
+      const { data: report, error } = await supabaseClient
+        .from('client_reports')
+        .select('id, client_id, state')
+        .eq('id', reportId)
+        .single();
+      if(error || !report) return false;
+      const { data: client } = await supabaseClient
+        .from('client_records')
+        .select('client_name')
+        .eq('id', report.client_id)
+        .single();
+      applyStateToForm(report.state);
+      loadedClientName = client ? (client.client_name || '') : '';
+      isViewingSavedRecord = true;
+      currentSessionRecordId = report.id;
+      return { mode: 'view' };
+    }catch(e){ console.error('讀取報告失敗', e); return false; }
+  }
+
+  if(trackClientId){
+    try{
+      const { data: latestReport, error } = await supabaseClient
+        .from('client_reports')
+        .select('state')
+        .eq('client_id', trackClientId)
+        .order('saved_at', { ascending:false })
+        .limit(1)
+        .single();
+      if(error || !latestReport) return false;
+      const { data: client } = await supabaseClient
+        .from('client_records')
+        .select('client_name')
+        .eq('id', trackClientId)
+        .single();
+      applyStateToForm(latestReport.state);
+      loadedClientName = client ? (client.client_name || '') : '';
+      isViewingSavedRecord = false;
+      trackingClientId = trackClientId;
+      return { mode: 'track' };
+    }catch(e){ console.error('讀取追蹤更新資料失敗', e); return false; }
+  }
+
+  return false;
 }
 
 function runLoadingThenReport(){
@@ -2246,7 +2299,10 @@ document.querySelectorAll('.report-toggle button').forEach(btn=>{
   });
 });
 
-/* ---------------- 初始化：若網址帶有 recordId，直接載入該筆客戶紀錄並跳到報告畫面 ---------------- */
+/* ---------------- 初始化：
+   ?reportId=       → 直接載入那份報告，跳到報告畫面（唯讀）
+   ?trackClientId=  → 帶入最新一份報告的答案，從問卷第一題開始（可編輯）
+   都沒有            → 全新問卷，走原本的同意畫面開始 ---------------- */
 let currentAdvisorName = '';
 (async function initFromQuery(){
   try{
@@ -2255,9 +2311,12 @@ let currentAdvisorName = '';
       currentAdvisorName = session.user.user_metadata?.display_name || session.user.email || '';
     }
   }catch(e){}
-  if(await tryLoadRecordFromQuery()){
+  const loaded = await tryLoadRecordFromQuery();
+  if(loaded && loaded.mode === 'view'){
     renderReport();
     showScreen('screen-report');
+  } else if(loaded && loaded.mode === 'track'){
+    enterPage(0);
   }
 })();
 
