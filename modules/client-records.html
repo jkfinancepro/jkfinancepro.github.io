@@ -37,6 +37,25 @@
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
     margin-bottom:16px;
   }
+  .search-box{
+    position:relative; flex:1; min-width:200px; max-width:320px;
+  }
+  .search-box input{
+    width:100%; padding:9px 14px 9px 34px; border:1.5px solid var(--line); border-radius:20px;
+    font-family:"Noto Sans TC",sans-serif; font-size:13px; color:var(--ink);
+    background:var(--card);
+  }
+  .search-box input:focus{outline:none; border-color:var(--teal);}
+  .search-box .search-icon{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    font-size:13px; color:var(--ink-soft); pointer-events:none;
+  }
+  .search-box .search-clear{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    appearance:none; border:none; background:none; color:var(--ink-soft);
+    font-size:15px; cursor:pointer; padding:4px; display:none; line-height:1;
+  }
+  .search-box.has-value .search-clear{display:block;}
   .count-label{font-size:12.5px;color:var(--ink-soft);font-family:"Roboto Mono",monospace;}
   .count-label b{color:var(--teal-deep);}
   .due-badge{
@@ -221,7 +240,14 @@
 
 <main class="wrap">
   <div class="toolbar">
-    <div class="count-label" id="countLabel">目前 0 筆 ／ 上限 不限</div>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+      <div class="search-box" id="searchBox">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="搜尋客戶名稱…">
+        <button class="search-clear" id="searchClear">✕</button>
+      </div>
+      <div class="count-label" id="countLabel">目前 0 筆 ／ 上限 不限</div>
+    </div>
     <div style="display:flex; align-items:center; gap:14px;">
       <div class="count-label" id="dueLabel"></div>
       <button class="btn-trash" id="btnToggleTrash">🗑️ 已刪除 (<span id="trashCount">0</span>)</button>
@@ -394,20 +420,45 @@ function summarize(state){
   }catch(e){ return ''; }
 }
 
+let lastFetchedRecords = [];
+let searchKeyword = '';
+
 async function render(){
   const allRecords = await fetchAllRecords();
   const records = allRecords.filter(r=>!r.deletedAt);
   const trashed = allRecords.filter(r=>r.deletedAt);
+  lastFetchedRecords = records;
   const limit = PLAN_LIMITS[currentPlan];
   const limitText = limit ? limit : '不限';
   document.getElementById('countLabel').innerHTML = '目前 <b>'+records.length+'</b> 筆 ／ 上限 '+limitText+(limit && records.length>=limit ? ' <span style="color:var(--negative);font-weight:700;">（已達上限）</span>' : '');
   document.getElementById('trashCount').textContent = trashed.length;
   const dueCount = records.filter(r=>{ const d=daysUntil(r.followUpDate); return d!==null && d<=0; }).length;
   document.getElementById('dueLabel').innerHTML = dueCount>0 ? '<span style="color:var(--negative);font-weight:700;">'+dueCount+' 筆待追蹤</span>' : '';
+
+  if(records.length===0){
+    const emptyState = document.getElementById('emptyState');
+    emptyState.innerHTML = '<div class="icon">🗂️</div>目前還沒有任何客戶紀錄。<br>到「財富地圖」帶客戶完成問卷、生成報告後，會自動出現在這裡。';
+    emptyState.style.display = 'block';
+    document.getElementById('recordList').style.display = 'none';
+    return;
+  }
+
+  renderRecordList();
+  renderTrash();
+}
+
+/* ---- 只重畫清單，不重新打資料庫，用在「打字搜尋」這種不需要重抓資料的情況 ---- */
+function renderRecordList(){
   const emptyState = document.getElementById('emptyState');
   const list = document.getElementById('recordList');
 
-  if(records.length===0){
+  const keyword = searchKeyword.trim().toLowerCase();
+  const filtered = keyword
+    ? lastFetchedRecords.filter(r => (r.clientName||'').toLowerCase().includes(keyword))
+    : lastFetchedRecords;
+
+  if(filtered.length===0){
+    emptyState.innerHTML = `<div class="icon">🔍</div>找不到名稱包含「${searchKeyword.trim()}」的客戶。`;
     emptyState.style.display = 'block';
     list.style.display = 'none';
     return;
@@ -416,7 +467,7 @@ async function render(){
   list.style.display = 'flex';
 
   // 待追蹤（今日或已過期）的排到最前面，其餘維持原本時間排序
-  const sorted = records.slice().sort((a,b)=>{
+  const sorted = filtered.slice().sort((a,b)=>{
     const da = daysUntil(a.followUpDate), db = daysUntil(b.followUpDate);
     const aUrgent = da!==null && da<=0, bUrgent = db!==null && db<=0;
     if(aUrgent && !bUrgent) return -1;
@@ -506,9 +557,19 @@ async function render(){
       window.open(`report-compare.html?reportId1=${encodeURIComponent(a)}&reportId2=${encodeURIComponent(b)}`, '_blank');
     });
   });
-
-  renderTrash();
 }
+
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  searchKeyword = e.target.value;
+  document.getElementById('searchBox').classList.toggle('has-value', searchKeyword.trim().length > 0);
+  renderRecordList();
+});
+document.getElementById('searchClear').addEventListener('click', ()=>{
+  searchKeyword = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchBox').classList.remove('has-value');
+  renderRecordList();
+});
 
 /* ---- 編輯彈窗：狀態／追蹤日期／筆記，只有這裡看得到、改得動 ---- */
 let editingId = null;
