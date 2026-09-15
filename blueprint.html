@@ -439,6 +439,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-config.js"></script>
 <script src="../theme-config.js"></script>
+<script src="../plan-utils.js"></script>
 <script>
 jkApplySavedTheme();
 
@@ -759,9 +760,17 @@ function monthOptions(){
   for(let m=1;m<=12;m++){ opts += `<option value="${m}">${m}</option>`; }
   return opts;
 }
-function dayOptions(){
+function daysInMonth(year, month){
+  if(!month) return 31; // 還沒選月份時，先給最大範圍，避免卡住
+  const y = year || new Date().getFullYear(); // 還沒選年份時，先用今年判斷（主要影響2月是否閏年）
+  return new Date(Number(y), Number(month), 0).getDate();
+}
+function dayOptions(year, month, selectedDay){
+  const maxDay = daysInMonth(year, month);
   let opts = '<option value="">日</option>';
-  for(let d=1;d<=31;d++){ opts += `<option value="${d}">${d}</option>`; }
+  for(let d=1; d<=maxDay; d++){
+    opts += `<option value="${d}"${Number(selectedDay)===d?' selected':''}>${d}</option>`;
+  }
   return opts;
 }
 
@@ -778,37 +787,32 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"dob", stage:"你的輪廓", icon:"👤", n:2,
-   title:"出生年月日", sub:"這會用來估算你的年齡跟目標年數。",
+  {id:"profileDetails", stage:"你的輪廓", icon:"👤", n:2,
+   title:"基本資料", sub:"出生年月日會用來估算你的年齡跟目標年數。",
    render: ()=>`
      <div class="field">
+       <label>出生年月日</label>
        <div class="dob-row">
          <select data-bind="dobY">${yearOptions()}</select>
          <select data-bind="dobM">${monthOptions()}</select>
-         <select data-bind="dobD">${dayOptions()}</select>
+         <select data-bind="dobD" id="dobDSelect">${dayOptions(basicA.dobY, basicA.dobM, basicA.dobD)}</select>
        </div>
        <div class="hint" id="dobAgeHint">${basicA.dobY ? "今年 "+getCurrentAge()+" 歲" : ""}</div>
      </div>
-   `},
-  {id:"gender", stage:"你的輪廓", icon:"👤", n:3,
-   title:"性別", sub:"",
-   render: ()=>`
-     <div class="field">
+     <div class="field" style="margin-top:26px;">
+       <label>性別</label>
        <div class="choice-group" data-mode="single" data-bind="gender">
          <div class="choice-pill">男</div><div class="choice-pill">女</div><div class="choice-pill">其他</div>
        </div>
      </div>
-   `},
-  {id:"location", stage:"你的輪廓", icon:"👤", n:4,
-   title:"居住地", sub:"",
-   render: ()=>`
-     <div class="field">
+     <div class="field" style="margin-top:26px;">
+       <label>居住地</label>
        <div class="choice-group" data-mode="single" data-bind="location">
          <div class="choice-pill">台灣</div><div class="choice-pill">其他</div>
        </div>
      </div>
    `},
-  {id:"job", stage:"你的輪廓", icon:"👤", n:5,
+  {id:"job", stage:"你的輪廓", icon:"👤", n:3,
    title:"職業", sub:"選最接近的類別就好。",
    render: ()=>`
      <div class="field">
@@ -822,29 +826,27 @@ const PAGES = [
      </div>
    `},
 
-  {id:"marital", stage:"你的後盾", icon:"🏠", n:6,
-   title:"婚姻狀況", sub:"",
+  {id:"maritalChildren", stage:"你的後盾", icon:"🏠", n:4,
+   title:"婚姻與子女", sub:"",
    render: ()=>`
      <div class="field">
+       <label>婚姻狀況</label>
        <div class="choice-group" data-mode="single" data-bind="marital">
          <div class="choice-pill">未婚</div><div class="choice-pill">已婚</div><div class="choice-pill">離異</div><div class="choice-pill">喪偶</div>
        </div>
      </div>
-   `},
-  {id:"children", stage:"你的後盾", icon:"🏠", n:7,
-   title:"有沒有子女？", sub:"",
-   render: ()=>`
-     <div class="field">
+     <div class="field" style="margin-top:26px;">
+       <label>有沒有子女？</label>
        <div class="choice-group" data-mode="single" data-bind="hasChildren">
          <div class="choice-pill">有</div><div class="choice-pill">無</div>
        </div>
      </div>
-     <div id="childrenListWrap" style="display:${backerA.hasChildren==="有"?"block":"none"};">
+     <div id="childrenListWrap" style="display:${backerA.hasChildren==="有"?"block":"none"};margin-top:16px;">
        <div id="childrenList"></div>
        <button class="add-member-btn" id="addChildBtn" type="button">＋ 新增子女</button>
      </div>
    `},
-  {id:"supportParents", stage:"你的後盾", icon:"🏠", n:8,
+  {id:"supportParents", stage:"你的後盾", icon:"🏠", n:5,
    title:"需要撫養父母嗎？", sub:"",
    render: ()=>`
      <div class="field">
@@ -854,20 +856,20 @@ const PAGES = [
      </div>
    `},
 
-  {id:"income", stage:"錢都去哪了", icon:"💧", n:9,
+  {id:"income", stage:"錢都去哪了", icon:"💧", n:6,
    title:"你的收入", sub:"不用精確到每一塊錢，抓大概的數字就好。",
    render: ()=>`
      <div id="incomeMount"></div>
      <div class="group-total-row"><span class="k">年收入合計</span><span class="v" id="incomeTotal">$0</span></div>
    `},
-  {id:"expense", stage:"錢都去哪了", icon:"💧", n:10,
+  {id:"expense", stage:"錢都去哪了", icon:"💧", n:7,
    title:"你的支出", sub:"",
    render: ()=>`
      <div id="expenseMount"></div>
      <div class="group-total-row warm"><span class="k">年支出合計</span><span class="v" id="expenseTotal">$0</span></div>
    `},
 
-  {id:"assets", stage:"你的起點", icon:"⚖️", n:11,
+  {id:"assets", stage:"你的起點", icon:"⚖️", n:8,
    title:"你擁有的資產", sub:"以目前的估計市值填寫。",
    render: ()=>`
      <div id="assetMount"></div>
@@ -895,14 +897,14 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"liabilities", stage:"你的起點", icon:"⚖️", n:12,
+  {id:"liabilities", stage:"你的起點", icon:"⚖️", n:9,
    title:"你目前的負債", sub:"",
    render: ()=>`
      <div id="liabilityMount"></div>
      <div class="group-total-row warm"><span class="k">負債合計</span><span class="v" id="liabilityTotal">$0</span></div>
    `},
 
-  {id:"risk", stage:"財務個性", icon:"🎯", n:13,
+  {id:"risk", stage:"財務個性", icon:"🎯", n:10,
    title:"關於金錢，你的真實感受？", sub:"1 = 非常不像我　　5 = 非常像我。沒有標準答案，憑直覺回答就好。",
    render: ()=>`
      ${RISK_QUESTIONS.map((q,i)=>`
@@ -914,7 +916,7 @@ const PAGES = [
        </div>
      `).join('')}
    `},
-  {id:"decisionStyle", stage:"財務個性", icon:"🎯", n:14,
+  {id:"decisionStyle", stage:"財務個性", icon:"🎯", n:11,
    title:"平時怎麼做財務決定的？", sub:"依你最常用的方式，依序點選（第一次點＝最常用）。",
    render: ()=>`
      <div class="field">
@@ -923,7 +925,7 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"moneyMeaning", stage:"財務個性", icon:"🎯", n:15,
+  {id:"moneyMeaning", stage:"財務個性", icon:"🎯", n:12,
    title:"對你來說，錢最重要的意義是？", sub:"憑直覺依序點選，最重要的先點。",
    render: ()=>`
      <div class="field">
@@ -932,7 +934,7 @@ const PAGES = [
        </div>
      </div>
    `},
-  {id:"lifeEvents", stage:"財務個性", icon:"🎯", n:16,
+  {id:"lifeEvents", stage:"財務個性", icon:"🎯", n:13,
    title:"最近一年，是否經歷這些事？", sub:"可複選。",
    render: ()=>`
      <div class="field">
@@ -943,7 +945,7 @@ const PAGES = [
      </div>
    `},
 
-  {id:"vision", stage:"財富願景", icon:"🧭", n:17,
+  {id:"vision", stage:"財富願景", icon:"🧭", n:14,
    title:"你想抵達的地方", sub:"選出你最想達成的財務目標，選了下方會出現輸入欄位。",
    render: ()=>`
      <div class="field">
@@ -958,7 +960,7 @@ const PAGES = [
      <div id="goalCalcMount"></div>
    `},
 
-  {id:"summary", isSummary:true, stage:"總覽", icon:"✅", n:18,
+  {id:"summary", isSummary:true, stage:"總覽", icon:"✅", n:15,
    title:"填寫完成，來看一下總覽", sub:"確認沒問題後，就可以生成完整報告書。",
    render: ()=>renderSummaryHTML()}
 ];
@@ -1188,8 +1190,8 @@ function renderChildRow(child){
 function bindPageInputs(id){
   document.querySelectorAll('#stageBody .choice-group[data-bind]').forEach(el=>{
     const key = el.dataset.bind;
-    const stateObj = id==='lifeStage'||id==='dob'||id==='gender'||id==='location'||id==='job' ? basicA
-      : id==='marital'||id==='children'||id==='supportParents' ? backerA
+    const stateObj = id==='lifeStage'||id==='profileDetails'||id==='job' ? basicA
+      : id==='maritalChildren'||id==='supportParents' ? backerA
       : id==='vision' ? visionA : basicA;
     bindChoiceGroup(el, stateObj, key);
   });
@@ -1199,6 +1201,16 @@ function bindPageInputs(id){
     sel.value = basicA[key] || "";
     sel.addEventListener('change', e=>{
       basicA[key] = e.target.value;
+      // 年或月改變時，重新計算天數選項（例如2月只有28或29天），
+      // 如果原本選的日期超出新的範圍，就清空日期讓使用者重選，避免留著一個不合法的日期
+      if(key === 'dobY' || key === 'dobM'){
+        const dSelect = document.getElementById('dobDSelect');
+        if(dSelect){
+          const maxDay = daysInMonth(basicA.dobY, basicA.dobM);
+          if(basicA.dobD && Number(basicA.dobD) > maxDay) basicA.dobD = '';
+          dSelect.innerHTML = dayOptions(basicA.dobY, basicA.dobM, basicA.dobD);
+        }
+      }
       const hintEl = document.getElementById('dobAgeHint');
       if(hintEl) hintEl.textContent = basicA.dobY ? "今年 "+getCurrentAge()+" 歲" : "";
     });
@@ -1247,7 +1259,7 @@ function bindPageInputs(id){
     });
   }
 
-  if(id==='children'){
+  if(id==='maritalChildren'){
     document.getElementById('childrenList').innerHTML = '';
     backerA.children.forEach(renderChildRow);
     document.getElementById('addChildBtn').addEventListener('click', addChild);
@@ -1802,20 +1814,25 @@ function renderSummaryHTML(){
 /* ---------------- 讀取動畫 → 報告 ---------------- */
 const LOADING_MESSAGES = ["整理基本資料中","描繪家庭關係圖","計算現金流向","盤點資產與負債","分析財務個性","對齊財富願景","繪製地圖最後一筆線條"];
 
-/* ---------------- 客戶資料：真正存進雲端資料庫（Supabase） ---------------- */
-let isViewingSavedRecord = false;
-let currentSessionRecordId = null;
+/* ---------------- 客戶資料：真正存進雲端資料庫（Supabase） ----------------
+   資料分兩層：
+   - client_records：客戶本身（姓名／狀態／筆記），一位客戶一列，不會重複新增
+   - client_reports：每一次填答的完整快照，一位客戶可以有很多列，
+     「查看報告」讀某一筆、「追蹤更新」帶入最新一筆但送出時永遠是新增一筆
+------------------------------------------------------------------------- */
+let isViewingSavedRecord = false;  // true＝純檢視某一份舊報告，不可編輯、不會存檔
+let currentSessionRecordId = null; // 目前檢視中的 report id（client_reports.id）
+let trackingClientId = null;       // 追蹤更新模式下，這是哪一位客戶（client_records.id）
 
 const PLAN_LIMITS = { free: 20, pro: 100, master: null };
 
 async function checkClientLimitBeforeSave(){
-  // 已經在編輯既有紀錄，不算新增一筆，不用檢查容量
-  if(isViewingSavedRecord || currentSessionRecordId) return true;
+  // 純檢視舊報告、或針對既有客戶做追蹤更新，都不算新增一位客戶，不用檢查容量
+  if(isViewingSavedRecord || trackingClientId) return true;
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session) return true;
-  const { data: profile } = await supabaseClient.from('profiles').select('plan').eq('id', session.user.id).single();
-  const plan = (profile && profile.plan) || 'free';
-  const limit = PLAN_LIMITS[plan];
+  const effective = await fetchEffectivePlan();
+  const limit = PLAN_LIMITS[effective.plan];
   if(!limit) return true; // 不限
   const { count } = await supabaseClient
     .from('client_records')
@@ -1836,7 +1853,7 @@ async function handleGenerateReport(){
 }
 
 async function saveClientRecord(){
-  if(isViewingSavedRecord) return;
+  if(isViewingSavedRecord) return; // 純檢視舊報告，不寫入
   try{
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(!session) return; // 沒登入的狀態不會存檔
@@ -1845,21 +1862,28 @@ async function saveClientRecord(){
       incomeGroups, expenseGroups, assetGroups, liabilityGroups,
       investCostBasis, investHoldYears
     };
-    if(currentSessionRecordId){
-      const { error } = await supabaseClient
-        .from('client_records')
-        .update({ saved_at: new Date().toISOString(), state: stateSnapshot })
-        .eq('id', currentSessionRecordId);
-      if(error) console.error('更新客戶紀錄失敗', error);
-    } else {
+
+    let clientId = trackingClientId;
+    if(!clientId){
+      // 全新客戶：先建立 client_records 這一列，之後同一個 session 都用這個 id，不會重複新增
       const { data, error } = await supabaseClient
         .from('client_records')
-        .insert({ advisor_id: session.user.id, client_name: '', state: stateSnapshot })
+        .insert({ advisor_id: session.user.id, client_name: '' })
         .select('id')
         .single();
       if(error){ console.error('新增客戶紀錄失敗', error); return; }
-      currentSessionRecordId = data.id;
+      clientId = data.id;
+      trackingClientId = clientId;
     }
+
+    // 不論全新客戶或追蹤更新，這裡永遠是「新增一筆報告」，不會覆蓋舊資料
+    const { data: reportRow, error: reportError } = await supabaseClient
+      .from('client_reports')
+      .insert({ client_id: clientId, advisor_id: session.user.id, state: stateSnapshot })
+      .select('id')
+      .single();
+    if(reportError){ console.error('新增報告紀錄失敗', reportError); return; }
+    currentSessionRecordId = reportRow.id;
   }catch(e){ console.error('儲存客戶紀錄失敗', e); }
 }
 
@@ -1868,36 +1892,76 @@ function replaceArrayInPlace(target, source){
   (source||[]).forEach(item=>target.push(item));
 }
 
+function applyStateToForm(s){
+  if(!s) return;
+  Object.assign(basicA, s.basicA);
+  Object.assign(backerA, s.backerA);
+  Object.assign(riskA, s.riskA);
+  Object.assign(decisionA, s.decisionA);
+  Object.assign(moneyA, s.moneyA);
+  Object.assign(eventsA, s.eventsA);
+  Object.assign(visionA, s.visionA);
+  investCostBasis = s.investCostBasis || 0;
+  investHoldYears = s.investHoldYears || 0;
+  replaceArrayInPlace(incomeGroups, s.incomeGroups);
+  replaceArrayInPlace(expenseGroups, s.expenseGroups);
+  replaceArrayInPlace(assetGroups, s.assetGroups);
+  replaceArrayInPlace(liabilityGroups, s.liabilityGroups);
+}
+
+/* 網址帶 ?reportId=  → 純檢視某一份已存的報告（唯讀，直接跳到報告畫面）
+   網址帶 ?trackClientId= → 追蹤更新：帶入該客戶最新一份報告，從問卷第一題開始、可編輯，
+                             送出後會新增一筆報告，不會動到舊的 */
 async function tryLoadRecordFromQuery(){
   const params = new URLSearchParams(window.location.search);
-  const recordId = params.get('recordId');
-  if(!recordId) return false;
-  try{
-    const { data: record, error } = await supabaseClient
-      .from('client_records')
-      .select('state, client_name')
-      .eq('id', recordId)
-      .single();
-    if(error || !record) return false;
-    const s = record.state;
-    loadedClientName = record.client_name || '';
-    Object.assign(basicA, s.basicA);
-    Object.assign(backerA, s.backerA);
-    Object.assign(riskA, s.riskA);
-    Object.assign(decisionA, s.decisionA);
-    Object.assign(moneyA, s.moneyA);
-    Object.assign(eventsA, s.eventsA);
-    Object.assign(visionA, s.visionA);
-    investCostBasis = s.investCostBasis || 0;
-    investHoldYears = s.investHoldYears || 0;
-    replaceArrayInPlace(incomeGroups, s.incomeGroups);
-    replaceArrayInPlace(expenseGroups, s.expenseGroups);
-    replaceArrayInPlace(assetGroups, s.assetGroups);
-    replaceArrayInPlace(liabilityGroups, s.liabilityGroups);
-    isViewingSavedRecord = true;
-    currentSessionRecordId = recordId;
-    return true;
-  }catch(e){ console.error('讀取客戶紀錄失敗', e); return false; }
+  const reportId = params.get('reportId');
+  const trackClientId = params.get('trackClientId');
+
+  if(reportId){
+    try{
+      const { data: report, error } = await supabaseClient
+        .from('client_reports')
+        .select('id, client_id, state')
+        .eq('id', reportId)
+        .single();
+      if(error || !report) return false;
+      const { data: client } = await supabaseClient
+        .from('client_records')
+        .select('client_name')
+        .eq('id', report.client_id)
+        .single();
+      applyStateToForm(report.state);
+      loadedClientName = client ? (client.client_name || '') : '';
+      isViewingSavedRecord = true;
+      currentSessionRecordId = report.id;
+      return { mode: 'view' };
+    }catch(e){ console.error('讀取報告失敗', e); return false; }
+  }
+
+  if(trackClientId){
+    try{
+      const { data: latestReport, error } = await supabaseClient
+        .from('client_reports')
+        .select('state')
+        .eq('client_id', trackClientId)
+        .order('saved_at', { ascending:false })
+        .limit(1)
+        .single();
+      if(error || !latestReport) return false;
+      const { data: client } = await supabaseClient
+        .from('client_records')
+        .select('client_name')
+        .eq('id', trackClientId)
+        .single();
+      applyStateToForm(latestReport.state);
+      loadedClientName = client ? (client.client_name || '') : '';
+      isViewingSavedRecord = false;
+      trackingClientId = trackClientId;
+      return { mode: 'track' };
+    }catch(e){ console.error('讀取追蹤更新資料失敗', e); return false; }
+  }
+
+  return false;
 }
 
 function runLoadingThenReport(){
@@ -2235,7 +2299,10 @@ document.querySelectorAll('.report-toggle button').forEach(btn=>{
   });
 });
 
-/* ---------------- 初始化：若網址帶有 recordId，直接載入該筆客戶紀錄並跳到報告畫面 ---------------- */
+/* ---------------- 初始化：
+   ?reportId=       → 直接載入那份報告，跳到報告畫面（唯讀）
+   ?trackClientId=  → 帶入最新一份報告的答案，從問卷第一題開始（可編輯）
+   都沒有            → 全新問卷，走原本的同意畫面開始 ---------------- */
 let currentAdvisorName = '';
 (async function initFromQuery(){
   try{
@@ -2244,9 +2311,12 @@ let currentAdvisorName = '';
       currentAdvisorName = session.user.user_metadata?.display_name || session.user.email || '';
     }
   }catch(e){}
-  if(await tryLoadRecordFromQuery()){
+  const loaded = await tryLoadRecordFromQuery();
+  if(loaded && loaded.mode === 'view'){
     renderReport();
     showScreen('screen-report');
+  } else if(loaded && loaded.mode === 'track'){
+    enterPage(0);
   }
 })();
 
